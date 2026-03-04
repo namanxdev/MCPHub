@@ -2,6 +2,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { LATEST_PROTOCOL_VERSION } from "@modelcontextprotocol/sdk/types.js";
+import { ProtocolLogger } from "./protocol-logger";
 
 interface StoredConnection {
   client: Client;
@@ -15,6 +16,7 @@ interface StoredConnection {
   transport_type: "sse" | "streamable-http";
   connectedAt: Date;
   lastActivity: Date;
+  logger: ProtocolLogger;
 }
 
 class ConnectionManager {
@@ -66,6 +68,37 @@ class ConnectionManager {
       protocolVersion,
     };
 
+    const logger = new ProtocolLogger();
+
+    // Patch transport.send to log outgoing messages.
+    // SSEClientTransport.send only accepts one argument while
+    // StreamableHTTPClientTransport accepts an optional second argument.
+    // We cast through `unknown` so TypeScript accepts the reassignment on
+    // both transport union members.
+    const originalSend = transport.send.bind(transport) as (
+      msg: Parameters<typeof transport.send>[0],
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ...rest: any[]
+    ) => Promise<void>;
+    (transport as { send: typeof originalSend }).send = async (
+      msg,
+      ...rest
+    ) => {
+      logger.logMessage("sent", msg);
+      return originalSend(msg, ...rest);
+    };
+
+    // Patch transport.onmessage to log incoming messages.
+    // The concrete SSE/StreamableHTTP transport types declare onmessage with a
+    // single argument, so we match that signature exactly.
+    const originalOnmessage = transport.onmessage;
+    transport.onmessage = (msg) => {
+      logger.logMessage("received", msg);
+      if (originalOnmessage) {
+        originalOnmessage(msg);
+      }
+    };
+
     this.connections.set(sessionId, {
       client,
       transport,
@@ -74,6 +107,7 @@ class ConnectionManager {
       transport_type: transportType,
       connectedAt: new Date(),
       lastActivity: new Date(),
+      logger,
     });
 
     return { sessionId, serverInfo, client };
@@ -98,6 +132,12 @@ class ConnectionManager {
 
   getConnection(sessionId: string): StoredConnection | undefined {
     return this.connections.get(sessionId);
+  }
+
+  getLogger(sessionId: string): ProtocolLogger | undefined {
+    const conn = this.connections.get(sessionId);
+    if (conn) conn.lastActivity = new Date();
+    return conn?.logger;
   }
 
   private startCleanupTimer() {
