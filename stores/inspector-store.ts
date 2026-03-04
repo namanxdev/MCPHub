@@ -1,18 +1,7 @@
 import { create } from "zustand";
+import type { ProtocolMessage } from "@/lib/mcp/protocol-logger";
 
-export interface ProtocolMessage {
-  id: string;
-  timestamp: number;
-  direction: "sent" | "received";
-  raw: string;
-  parsed: Record<string, unknown>;
-  correlationId?: number | string;
-  latencyMs?: number;
-  sizeBytes: number;
-  method?: string;
-  isError?: boolean;
-  isNotification?: boolean;
-}
+export type { ProtocolMessage };
 
 interface InspectorStore {
   messages: ProtocolMessage[];

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { ThemeProvider } from "next-themes";
 import "./globals.css";
 import Link from "next/link";
 
@@ -25,10 +26,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-background`}
       >
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <header className="border-b">
           <nav className="max-w-7xl mx-auto px-4 h-14 flex items-center gap-6">
             <Link href="/" className="font-bold text-lg">
@@ -61,6 +63,7 @@ export default function RootLayout({
           </nav>
         </header>
         <main>{children}</main>
+        </ThemeProvider>
       </body>
     </html>
   );

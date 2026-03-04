@@ -1,7 +1,7 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-/node_modules
+node_modules/
 /.pnp
 .pnp.*
 .yarn/*
@@ -19,10 +19,15 @@
 
 # production
 /build
+dist/
 
 # misc
 .DS_Store
 *.pem
+Thumbs.db
+*.swp
+*.swo
+*~
 
 # debug
 npm-debug.log*
@@ -39,3 +44,21 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# CLI
+/cli/node_modules/
+/cli/dist/
+/cli/*.tsbuildinfo
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+
+# lock files (optional — uncomment to ignore)
+# package-lock.json
+# pnpm-lock.yaml

@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
           )
         : undefined,
       category
-        ? sql`${sql.raw(`'${category.replace(/'/g, "''")}'`)} = ANY(${servers.categories})`
+        ? sql`${category} = ANY(${servers.categories})`
         : undefined
     );
 
