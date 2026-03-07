@@ -16,11 +16,16 @@ export async function GET(
   const { serverId } = await params;
 
   try {
-    // Fetch server by ID or slug
+    // Fetch server by ID (UUID) or slug (string)
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(serverId);
+    const whereClause = isUuid
+      ? or(eq(servers.id, serverId), eq(servers.slug, serverId))
+      : eq(servers.slug, serverId);
+
     const serverResults = await db
       .select()
       .from(servers)
-      .where(or(eq(servers.id, serverId), eq(servers.slug, serverId)))
+      .where(whereClause)
       .limit(1);
 
     if (serverResults.length === 0) {

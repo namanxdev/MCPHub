@@ -64,6 +64,12 @@ interface ConnectionStore {
   // History
   history: ConnectionHistoryEntry[];
 
+  // Reconnect state
+  reconnectAttempts: number;
+  maxReconnectAttempts: number;
+  isReconnecting: boolean;
+  lastConnectionParams: { url: string; transport: "sse" | "streamable-http" } | null;
+
   // Actions
   setConnecting: () => void;
   setConnected: (session: ConnectionSession) => void;
@@ -71,6 +77,12 @@ interface ConnectionStore {
   setDisconnected: () => void;
   addToHistory: (entry: ConnectionHistoryEntry) => void;
   clearHistory: () => void;
+
+  // Reconnect actions
+  setReconnecting: (v: boolean) => void;
+  incrementReconnectAttempts: () => void;
+  resetReconnect: () => void;
+  setLastConnectionParams: (params: { url: string; transport: "sse" | "streamable-http" } | null) => void;
 }
 
 export const useConnectionStore = create<ConnectionStore>((set) => ({
@@ -79,8 +91,21 @@ export const useConnectionStore = create<ConnectionStore>((set) => ({
   error: null,
   history: [],
 
+  reconnectAttempts: 0,
+  maxReconnectAttempts: 5,
+  isReconnecting: false,
+  lastConnectionParams: null,
+
   setConnecting: () => set({ status: "connecting", error: null }),
-  setConnected: (session) => set({ session, status: "connected", error: null }),
+  setConnected: (session) =>
+    set({
+      session,
+      status: "connected",
+      error: null,
+      reconnectAttempts: 0,
+      isReconnecting: false,
+      lastConnectionParams: { url: session.url, transport: session.transport },
+    }),
   setError: (error) => set({ status: "error", error }),
   setDisconnected: () =>
     set({ session: null, status: "disconnected", error: null }),
@@ -92,4 +117,10 @@ export const useConnectionStore = create<ConnectionStore>((set) => ({
       ].slice(0, 10),
     })),
   clearHistory: () => set({ history: [] }),
+
+  setReconnecting: (v) => set({ isReconnecting: v }),
+  incrementReconnectAttempts: () =>
+    set((state) => ({ reconnectAttempts: state.reconnectAttempts + 1 })),
+  resetReconnect: () => set({ reconnectAttempts: 0, isReconnecting: false }),
+  setLastConnectionParams: (params) => set({ lastConnectionParams: params }),
 }));

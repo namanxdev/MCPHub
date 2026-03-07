@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
   const category = searchParams.get("category") || "";
   const status = searchParams.get("status") || "active";
   const sort = searchParams.get("sort") || "newest";
+  const featured = searchParams.get("featured");
   const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
   const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") || "20")));
   const offset = (page - 1) * limit;
@@ -51,7 +52,8 @@ export async function GET(request: NextRequest) {
         : undefined,
       category
         ? sql`${category} = ANY(${servers.categories})`
-        : undefined
+        : undefined,
+      featured === "true" ? eq(servers.isFeatured, true) : undefined
     );
 
     const orderBy =

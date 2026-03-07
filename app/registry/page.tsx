@@ -2,11 +2,12 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { PlusIcon } from "lucide-react";
+import { PlusIcon, SparklesIcon, ClockIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SearchBar } from "@/components/registry/search-bar";
 import { CategoryFilter } from "@/components/registry/category-filter";
 import { ServerGrid } from "@/components/registry/server-grid";
+import { ServerCard } from "@/components/registry/server-card";
 import type { ServerCardData } from "@/components/registry/server-card";
 
 const SORT_OPTIONS = [
@@ -27,7 +28,33 @@ export default function RegistryPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
 
+  const [recentServers, setRecentServers] = useState<ServerCardData[]>([]);
+  const [featuredServers, setFeaturedServers] = useState<ServerCardData[]>([]);
+
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  // Fetch featured & recent on mount
+  useEffect(() => {
+    async function fetchHighlights() {
+      try {
+        const [recentRes, featuredRes] = await Promise.all([
+          fetch("/api/registry?sort=newest&limit=6"),
+          fetch("/api/registry?sort=newest&limit=6&featured=true"),
+        ]);
+        if (recentRes.ok) {
+          const data = await recentRes.json();
+          setRecentServers(data.servers ?? []);
+        }
+        if (featuredRes.ok) {
+          const data = await featuredRes.json();
+          setFeaturedServers(data.servers ?? []);
+        }
+      } catch {
+        // silently fail — highlights are non-critical
+      }
+    }
+    fetchHighlights();
+  }, []);
 
   const fetchServers = useCallback(async () => {
     setLoading(true);
@@ -93,6 +120,36 @@ export default function RegistryPage() {
           </Link>
         </Button>
       </div>
+
+      {/* Featured Servers */}
+      {featuredServers.length > 0 && (
+        <section>
+          <h2 className="text-lg font-semibold flex items-center gap-2 mb-3">
+            <SparklesIcon className="size-4" />
+            Featured
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {featuredServers.map((s) => (
+              <ServerCard key={s.id} server={s} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Recently Added */}
+      {recentServers.length > 0 && !query && !category && (
+        <section>
+          <h2 className="text-lg font-semibold flex items-center gap-2 mb-3">
+            <ClockIcon className="size-4" />
+            Recently Added
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {recentServers.map((s) => (
+              <ServerCard key={s.id} server={s} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Filters row */}
       <div className="flex flex-col gap-4">
