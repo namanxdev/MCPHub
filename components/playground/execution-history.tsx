@@ -24,10 +24,12 @@ function HistoryRow({ record, onReplay }: HistoryRowProps) {
   return (
     <div className="border rounded-md overflow-hidden">
       {/* Summary row */}
-      <button
-        type="button"
-        className="w-full flex items-center gap-2 px-3 py-2 hover:bg-accent transition-colors text-left"
+      <div
+        role="button"
+        tabIndex={0}
+        className="w-full flex items-center gap-2 px-3 py-2 hover:bg-accent transition-colors text-left cursor-pointer"
         onClick={() => setExpanded((v) => !v)}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setExpanded((v) => !v); }}
       >
         {expanded ? (
           <ChevronDownIcon className="size-3.5 shrink-0 text-muted-foreground" />
@@ -59,7 +61,7 @@ function HistoryRow({ record, onReplay }: HistoryRowProps) {
         >
           <RotateCcwIcon className="size-3" />
         </Button>
-      </button>
+      </div>
 
       {/* Expanded detail */}
       {expanded && (
