@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { ThemeProvider } from "next-themes";
+import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
-import Link from "next/link";
+import { AnimatedNav } from "@/components/navigation/animated-nav";
+import { Footer } from "@/components/navigation/footer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800"],
 });
 
 const geistMono = Geist_Mono({
@@ -15,9 +17,16 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MCPHub — Postman for MCP",
+  title: "MCPHub — The MCP Development Platform",
   description:
-    "Discover, test, debug, and monitor MCP servers. The unified platform for the Model Context Protocol ecosystem.",
+    "Connect, test, debug, and monitor any MCP server. The definitive platform for Model Context Protocol development.",
+  keywords: ["MCP", "Model Context Protocol", "API Testing", "Developer Tools"],
+  authors: [{ name: "MCPHub" }],
+  openGraph: {
+    title: "MCPHub — The MCP Development Platform",
+    description: "The definitive platform for Model Context Protocol development.",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
@@ -26,44 +35,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className="dark">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-background`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-background text-foreground font-sans`}
       >
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-        <header className="border-b">
-          <nav className="max-w-7xl mx-auto px-4 h-14 flex items-center gap-6">
-            <Link href="/" className="font-bold text-lg">
-              MCPHub
-            </Link>
-            <Link
-              href="/playground"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Playground
-            </Link>
-            <Link
-              href="/registry"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Registry
-            </Link>
-            <Link
-              href="/inspector"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Inspector
-            </Link>
-            <Link
-              href="/dashboard"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Dashboard
-            </Link>
-          </nav>
-        </header>
-        <main>{children}</main>
-        </ThemeProvider>
+        <AnimatedNav />
+        <main className="pt-14">{children}</main>
+        <Footer />
+        <Analytics />
       </body>
     </html>
   );
