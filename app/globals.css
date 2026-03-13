@@ -12,6 +12,14 @@
   animation: marquee 28s linear infinite;
 }
 
+@keyframes marquee-reverse {
+  from { transform: translateX(-50%); }
+  to   { transform: translateX(0); }
+}
+.animate-marquee-reverse {
+  animation: marquee-reverse 36s linear infinite;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -157,4 +165,41 @@ html {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: oklch(0.4 0 0);
+}
+
+/* ─── Fluid Typography ───────────────────────────────────── */
+:root {
+  --text-display:  clamp(3rem, 10vw, 10rem);
+  --text-headline: clamp(2rem, 5vw, 5rem);
+  --text-title:    clamp(1.25rem, 2.5vw, 2.5rem);
+  --text-body:     clamp(0.875rem, 1vw, 1rem);
+  --text-caption:  clamp(0.625rem, 0.8vw, 0.75rem);
+}
+
+.text-display  { font-size: var(--text-display); }
+.text-headline { font-size: var(--text-headline); }
+.text-title    { font-size: var(--text-title); }
+
+/* ─── Shimmer skeleton ───────────────────────────────────── */
+@keyframes shimmer {
+  from { background-position: -200% center; }
+  to   { background-position:  200% center; }
+}
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    oklch(1 0 0 / 3%) 0%,
+    oklch(1 0 0 / 8%) 40%,
+    oklch(1 0 0 / 3%) 80%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+
+/* ─── Mobile viewport height ─────────────────────────────── */
+@supports (height: 100dvh) {
+  :root { --vh: 1dvh; }
+}
+@supports not (height: 100dvh) {
+  :root { --vh: 1vh; }
 }

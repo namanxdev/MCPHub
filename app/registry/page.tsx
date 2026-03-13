@@ -3,12 +3,15 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { PlusIcon, SparklesIcon, ClockIcon } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { SearchBar } from "@/components/registry/search-bar";
 import { CategoryFilter } from "@/components/registry/category-filter";
 import { ServerGrid } from "@/components/registry/server-grid";
 import { ServerCard } from "@/components/registry/server-card";
 import type { ServerCardData } from "@/components/registry/server-card";
+import { LineReveal } from "@/components/effects/line-reveal";
+import { FadeIn } from "@/components/effects/fade-in";
 
 const SORT_OPTIONS = [
   { label: "Newest", value: "newest" },
@@ -108,10 +111,14 @@ export default function RegistryPage() {
       {/* Page header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">MCP Server Registry</h1>
-          <p className="text-muted-foreground mt-1">
-            Discover and connect to publicly available MCP servers
-          </p>
+          <LineReveal delay={0.1}>
+            <h1 className="text-3xl font-bold">MCP Server Registry</h1>
+          </LineReveal>
+          <FadeIn delay={0.3}>
+            <p className="text-muted-foreground mt-1">
+              Discover and connect to publicly available MCP servers
+            </p>
+          </FadeIn>
         </div>
         <Button asChild>
           <Link href="/registry/submit">
@@ -180,13 +187,23 @@ export default function RegistryPage() {
       )}
 
       {/* Server grid */}
-      <ServerGrid
-        servers={servers}
-        loading={loading}
-        page={page}
-        totalPages={totalPages}
-        onPageChange={setPage}
-      />
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={`${query}-${category}-${sort}-${page}`}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          <ServerGrid
+            servers={servers}
+            loading={loading}
+            page={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+          />
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 }

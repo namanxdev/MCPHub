@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef } from "react";
+import { motion } from "framer-motion";
 import { useConnectionStore } from "@/stores/connection-store";
 import { useInspectorStore } from "@/stores/inspector-store";
 import { useProtocolMessages } from "@/hooks/use-protocol-messages";
@@ -89,7 +90,12 @@ export default function InspectorPage() {
 
   if (!session) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-8 flex flex-col items-center gap-6">
+      <motion.div
+        className="max-w-7xl mx-auto px-4 py-8 flex flex-col items-center gap-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
+      >
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-2">Protocol Inspector</h1>
           <p className="text-muted-foreground text-sm max-w-md">
@@ -105,7 +111,7 @@ export default function InspectorPage() {
             <ConnectForm />
           </CardContent>
         </Card>
-      </div>
+      </motion.div>
     );
   }
 

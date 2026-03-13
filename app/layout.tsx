@@ -4,6 +4,7 @@ import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 import { AnimatedNav } from "@/components/navigation/animated-nav";
 import { Footer } from "@/components/navigation/footer";
+import { CustomCursor } from "@/components/ui/custom-cursor";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -39,8 +40,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-background text-foreground font-sans`}
       >
+        <CustomCursor />
         <AnimatedNav />
-        <main className="pt-14">{children}</main>
+        <main className="pt-16">{children}</main>
         <Footer />
         <Analytics />
       </body>
