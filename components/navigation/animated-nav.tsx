@@ -8,6 +8,7 @@ import * as HoverCard from "@radix-ui/react-hover-card";
 import { cn } from "@/lib/utils";
 import { Magnetic } from "@/components/effects/magnetic";
 import { EASE_SMOOTH, EASE_CINEMATIC } from "@/lib/motion";
+import { ArrowRight } from "lucide-react";
 
 const navLinks = [
   { href: "/playground", label: "Playground", desc: "Connect to any MCP server and run its tools in seconds." },
@@ -23,15 +24,15 @@ function NavLink({ href, label, desc, isActive }: { href: string; label: string;
         <Magnetic strength={0.25}>
           <Link href={href} className="relative group flex flex-col items-center">
             <span className={cn(
-              "text-[13px] tracking-[0.12em] uppercase transition-colors duration-200",
-              isActive ? "text-white" : "text-white/40 hover:text-white/75"
+              "text-xs md:text-sm font-mono tracking-widest uppercase transition-colors duration-200",
+              isActive ? "text-foreground font-bold" : "text-foreground/50 hover:text-foreground hover:font-bold"
             )}>
               {label}
             </span>
             {isActive && (
               <motion.div
                 layoutId="nav-indicator"
-                className="absolute -bottom-1 left-0 right-0 h-px bg-white/50"
+                className="absolute -bottom-2 left-0 right-0 h-0.5 bg-foreground"
                 transition={{ type: "spring", stiffness: 400, damping: 30 }}
               />
             )}
@@ -42,8 +43,8 @@ function NavLink({ href, label, desc, isActive }: { href: string; label: string;
         <HoverCard.Content
           side="bottom"
           align="center"
-          sideOffset={12}
-          className="z-50 w-52 rounded-sm border border-white/[0.08] bg-[oklch(0.08_0_0)] p-4 shadow-xl"
+          sideOffset={24}
+          className="z-50 w-64 rounded-none border-2 border-foreground bg-background p-6 shadow-2xl"
           asChild
         >
           <motion.div
@@ -52,8 +53,8 @@ function NavLink({ href, label, desc, isActive }: { href: string; label: string;
             exit={{ opacity: 0, scale: 0.95, y: -4 }}
             transition={{ duration: 0.15, ease: EASE_SMOOTH }}
           >
-            <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-white/30 mb-2">{label}</p>
-            <p className="text-[12px] text-white/50 leading-[1.6]">{desc}</p>
+            <p className="font-mono text-sm font-bold tracking-widest uppercase text-foreground mb-3">{label}</p>
+            <p className="text-sm text-foreground/70 leading-[1.6]">{desc}</p>
           </motion.div>
         </HoverCard.Content>
       </HoverCard.Portal>
@@ -66,34 +67,49 @@ function MobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-40 bg-[oklch(0.06_0_0)] flex flex-col"
+          className="fixed inset-0 z-40 bg-background flex flex-col pt-16"
           initial={{ x: "100%" }}
           animate={{ x: 0 }}
           exit={{ x: "100%" }}
           transition={{ duration: 0.4, ease: EASE_CINEMATIC }}
         >
-          <div className="h-14 flex items-center justify-between px-6">
-            <span className="font-mono text-[11px] font-bold tracking-[0.18em] uppercase text-white">MCPHub</span>
-            <button onClick={onClose} className="text-white/50 hover:text-white transition-colors p-1" aria-label="Close menu">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <line x1="2" y1="2" x2="14" y2="14" stroke="currentColor" strokeWidth="1.5"/>
-                <line x1="14" y1="2" x2="2" y2="14" stroke="currentColor" strokeWidth="1.5"/>
-              </svg>
-            </button>
-          </div>
-          <nav className="flex flex-col px-6 pt-8 gap-6">
+          {/* Subtle grid background for menu */}
+          <div 
+            className="absolute inset-0 opacity-[0.03] pointer-events-none" 
+            style={{ 
+              backgroundImage: "linear-gradient(to right, var(--color-foreground) 1px, transparent 1px), linear-gradient(to bottom, var(--color-foreground) 1px, transparent 1px)", 
+              backgroundSize: "4rem 4rem" 
+            }} 
+          />
+          
+          <nav className="flex flex-col border-t-2 border-foreground/10 h-full">
             {navLinks.map((link, i) => (
               <motion.div
                 key={link.href}
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.06 + 0.1, duration: 0.4, ease: EASE_SMOOTH }}
+                className="border-b-2 border-foreground/10"
               >
-                <Link href={link.href} onClick={onClose} className="text-2xl font-medium text-white/70 hover:text-white transition-colors">
+                <Link 
+                  href={link.href} 
+                  onClick={onClose} 
+                  className="flex items-center justify-between p-8 text-3xl font-bold text-foreground/60 hover:text-foreground hover:bg-foreground/5 transition-all w-full uppercase"
+                >
                   {link.label}
+                  <ArrowRight className="w-8 h-8 opacity-0 -translate-x-4 transition-all group-hover:opacity-100 group-hover:translate-x-0" />
                 </Link>
               </motion.div>
             ))}
+            <div className="p-8 mt-auto">
+              <Link 
+                href="/playground" 
+                onClick={onClose}
+                className="inline-flex items-center justify-center w-full bg-foreground text-background font-medium py-6 text-xl tracking-tight hover:scale-[1.02] transition-transform"
+              >
+                GET STARTED
+              </Link>
+            </div>
           </nav>
         </motion.div>
       )}
@@ -123,59 +139,69 @@ export function AnimatedNav() {
 
   return (
     <>
-      {/* Scroll progress bar */}
+      {/* Scroll target bar */}
       <motion.div
-        className="fixed top-0 inset-x-0 z-[60] h-px bg-white/30 origin-left"
+        className="fixed top-0 inset-x-0 z-[60] h-1.5 bg-foreground origin-left"
         style={{ scaleX: progressScaleX }}
       />
 
       <motion.header
-        initial={{ y: -60 }}
-        animate={{ y: visible ? 0 : -60 }}
+        initial={{ y: -80 }}
+        animate={{ y: visible ? 0 : -80 }}
         transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
         className={cn(
           "fixed top-0 inset-x-0 z-50 transition-colors duration-500",
-          scrolled
-            ? "border-b border-white/[0.07] bg-[oklch(0.06_0_0)]/90 backdrop-blur-sm"
-            : "bg-transparent"
+          scrolled || menuOpen
+            ? "border-b-2 border-foreground/10 bg-background"
+            : "bg-transparent border-b-2 border-transparent"
         )}
       >
-        <nav className="max-w-[1440px] mx-auto px-6 md:px-12 h-16 flex items-center justify-between">
-          {/* Wordmark */}
-          <Magnetic strength={0.2}>
-            <Link href="/" className="font-mono text-[13px] font-bold tracking-[0.18em] uppercase text-white hover:text-white/70 transition-colors duration-200">
-              MCPHub
-            </Link>
-          </Magnetic>
+        <nav className="max-w-[1800px] mx-auto px-6 md:px-12 h-20 flex items-center justify-between">
+          <div className="flex-1">
+            {/* Wordmark */}
+            <Magnetic strength={0.2}>
+              <Link href="/" className="font-bold text-xl tracking-tighter uppercase text-foreground inline-flex relative overflow-hidden group">
+                <span className="group-hover:-translate-y-full transition-transform duration-300">MCPHub</span>
+                <span className="absolute top-full left-0 group-hover:-translate-y-full transition-transform duration-300">MCPHub</span>
+              </Link>
+            </Magnetic>
+          </div>
 
           {/* Center nav — desktop */}
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden md:flex items-center justify-center gap-12 flex-1">
             {navLinks.map((link) => (
               <NavLink key={link.href} {...link} isActive={pathname === link.href} />
             ))}
           </div>
 
           {/* Right: CTA + hamburger */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center justify-end gap-6 flex-1">
             <Link
               href="/playground"
-              className="hidden md:block text-[13px] tracking-[0.12em] uppercase text-white/40 hover:text-white/80 transition-colors duration-200"
+              className="hidden md:inline-flex relative group overflow-hidden px-6 py-2 border-2 border-foreground font-mono text-sm font-bold uppercase transition-colors hover:text-background"
             >
-              Get started →
+              <span className="absolute inset-0 bg-foreground translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out z-0" />
+              <span className="relative z-10">Get started</span>
             </Link>
+            
             {/* Hamburger — mobile only */}
             <button
-              className="md:hidden flex flex-col gap-[5px] p-1"
-              onClick={() => setMenuOpen(true)}
-              aria-label="Open menu"
+              className="md:hidden flex flex-col gap-1.5 p-2 z-50 hover:opacity-70 transition-opacity"
+              onClick={() => setMenuOpen(!menuOpen)}
+              aria-label={menuOpen ? "Close menu" : "Open menu"}
             >
-              {[0, 1, 2].map((i) => (
-                <motion.span
-                  key={i}
-                  className="w-5 h-px bg-white/60 block"
-                  animate={{ opacity: 1 }}
-                />
-              ))}
+              <motion.span
+                animate={menuOpen ? { rotate: 45, y: 7 } : { rotate: 0, y: 0 }}
+                className="w-6 h-0.5 bg-foreground block origin-center"
+              />
+              <motion.span
+                animate={menuOpen ? { opacity: 0 } : { opacity: 1 }}
+                className="w-6 h-0.5 bg-foreground block"
+              />
+              <motion.span
+                animate={menuOpen ? { rotate: -45, y: -7 } : { rotate: 0, y: 0 }}
+                className="w-6 h-0.5 bg-foreground block origin-center"
+              />
             </button>
           </div>
         </nav>

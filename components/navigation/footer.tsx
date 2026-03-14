@@ -2,10 +2,9 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Github, Twitter, MessageCircle } from "lucide-react";
+import { Github, Twitter, MessageCircle, ArrowUpRight } from "lucide-react";
 import { useLenis } from "@/components/ui/smooth-scroll";
 import { StaggerGroup } from "@/components/effects/stagger-group";
-import { fadeUp } from "@/lib/motion";
 
 const links = {
   Product: [
@@ -39,47 +38,58 @@ export function Footer() {
   };
 
   return (
-    <footer className="relative border-t border-white/[0.07] overflow-hidden">
-      {/* Watermark */}
-      <div
-        className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden"
-        aria-hidden
-      >
-        <span className="text-[20vw] font-bold tracking-[-0.05em] text-white/[0.02] whitespace-nowrap">
+    <footer className="relative border-t-2 border-foreground/10 bg-background text-foreground overflow-hidden">
+      {/* Background grid */}
+      <div 
+        className="absolute inset-0 opacity-[0.03] pointer-events-none" 
+        style={{ 
+          backgroundImage: "linear-gradient(to right, var(--color-foreground) 1px, transparent 1px), linear-gradient(to bottom, var(--color-foreground) 1px, transparent 1px)", 
+          backgroundSize: "4rem 4rem" 
+        }} 
+      />
+
+      {/* Massive Watermark */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden mix-blend-difference hidden md:flex">
+        <span className="text-[20vw] font-bold tracking-[-0.05em] text-foreground/[0.03] whitespace-nowrap">
           MCPHUB
         </span>
       </div>
 
-      <StaggerGroup className="relative max-w-[1440px] mx-auto px-6 md:px-12 py-16 md:py-20" whileInView staggerDelay={0.06}>
-        <motion.div
-          variants={fadeUp}
-          className="flex flex-col md:flex-row justify-between gap-12 mb-16"
-        >
+      <div className="relative max-w-[1800px] mx-auto px-6 md:px-12 py-24 md:py-32">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-16 md:gap-8 mb-24">
+          
           {/* Brand */}
-          <div>
-            <span className="font-mono text-[11px] font-bold tracking-[0.18em] uppercase text-white/80 block mb-4">
-              MCPHub
-            </span>
-            <p className="text-xs text-white/25 max-w-[220px] leading-[1.7]">
+          <div className="col-span-1 md:col-span-5">
+            <Link href="/" className="inline-block group mb-8">
+              <span className="font-bold text-4xl tracking-tighter uppercase relative">
+                MCPHub
+                <span className="absolute -bottom-2 left-0 w-0 h-1 bg-foreground transition-all duration-300 group-hover:w-full" />
+              </span>
+            </Link>
+            <p className="text-xl md:text-2xl text-foreground/50 max-w-md font-medium leading-[1.4] tracking-tight">
               The definitive platform for developing, debugging, and deploying Model Context Protocol servers.
             </p>
           </div>
 
-          {/* Links */}
-          <div className="flex gap-16 md:gap-24">
+          {/* Links Grid */}
+          <div className="col-span-1 md:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-12 md:gap-8 justify-end">
             {Object.entries(links).map(([category, items]) => (
-              <div key={category}>
-                <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-white/20 mb-5">
+              <div key={category} className="flex flex-col md:items-end">
+                <h4 className="font-mono text-xs md:text-sm tracking-widest text-foreground/40 uppercase mb-8 border-b-2 border-foreground/10 pb-4 inline-block md:min-w-[200px] md:text-right">
                   {category}
-                </p>
-                <ul className="space-y-3">
+                </h4>
+                <ul className="space-y-4 md:text-right">
                   {items.map((item) => (
                     <li key={item.href}>
                       <Link
                         href={item.href}
-                        className="text-xs text-white/40 hover:text-white/75 transition-colors duration-200"
+                        className="group inline-flex items-center justify-end gap-2 text-2xl md:text-3xl font-bold text-foreground/60 hover:text-foreground transition-colors uppercase tracking-tight"
                       >
-                        {item.label}
+                        <span className="relative">
+                          {item.label}
+                          <span className="absolute left-0 right-0 bottom-1 h-0.5 bg-foreground scale-x-0 group-hover:scale-x-100 transition-transform origin-right" />
+                        </span>
+                        <ArrowRightIcon className="w-5 h-5 opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-foreground" />
                       </Link>
                     </li>
                   ))}
@@ -87,58 +97,70 @@ export function Footer() {
               </div>
             ))}
           </div>
-        </motion.div>
+        </div>
 
-        {/* Bottom row */}
-        <motion.div
-          variants={fadeUp}
-          className="border-t border-white/[0.07] pt-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
-        >
-          <p className="font-mono text-[11px] tracking-[0.15em] uppercase text-white/20">
-            © 2026 MCPHub. All rights reserved.
-          </p>
-
-          <div className="flex items-center gap-6">
-            {/* Social icons */}
-            {socialLinks.map(({ icon: Icon, href, label }) => (
-              <motion.a
-                key={href}
-                href={href}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={label}
-                className="text-white/20 hover:text-white/60 transition-colors duration-200"
-                whileHover={{ rotate: 270 }}
-                transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
-              >
-                <Icon size={14} />
-              </motion.a>
-            ))}
-
-            {/* Legal links */}
-            {[
-              { href: "/privacy", label: "Privacy" },
-              { href: "/terms", label: "Terms" },
-            ].map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="font-mono text-[11px] tracking-[0.15em] uppercase text-white/20 hover:text-white/50 transition-colors duration-200"
-              >
-                {link.label}
+        {/* Bottom Bar */}
+        <div className="border-t-2 border-foreground/10 pt-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-8 font-mono text-xs tracking-widest uppercase">
+            <span className="text-foreground/40">© 2026 MCPHub.</span>
+            <div className="flex gap-6 text-foreground/60">
+              <Link href="/privacy" className="hover:text-foreground transition-colors relative group">
+                PRIVACY
+                <span className="absolute left-0 -bottom-1 w-full h-px bg-foreground scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
               </Link>
-            ))}
+              <Link href="/terms" className="hover:text-foreground transition-colors relative group">
+                TERMS
+                <span className="absolute left-0 -bottom-1 w-full h-px bg-foreground scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
+              </Link>
+            </div>
+          </div>
 
-            {/* Back to top */}
+          <div className="flex items-center gap-8 font-mono text-xs ">
+            <div className="flex gap-6">
+              {socialLinks.map(({ icon: Icon, href, label }) => (
+                <a
+                  key={href}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={label}
+                  className="text-foreground/40 hover:text-foreground transition-transform hover:-translate-y-1 block"
+                >
+                  <Icon size={20} />
+                </a>
+              ))}
+            </div>
+
+            <div className="w-px h-8 bg-foreground/10 hidden md:block" />
+
+            {/* Back to top brutalist button */}
             <button
               onClick={scrollToTop}
-              className="font-mono text-[11px] tracking-[0.15em] uppercase text-white/20 hover:text-white/50 transition-colors duration-200 flex items-center gap-1"
+              className="tracking-widest uppercase text-foreground/60 hover:text-background hover:bg-foreground px-4 py-2 border-2 border-transparent hover:border-foreground transition-all flex items-center gap-2"
             >
-              ↑ Top
+              TOP <ArrowUpRight size={16} />
             </button>
           </div>
-        </motion.div>
-      </StaggerGroup>
+        </div>
+      </div>
     </footer>
+  );
+}
+
+function ArrowRightIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="square"
+      strokeLinejoin="miter"
+      {...props}
+    >
+      <path d="M5 12h14" />
+      <path d="m12 5 7 7-7 7" />
+    </svg>
   );
 }
