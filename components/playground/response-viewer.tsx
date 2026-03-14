@@ -53,7 +53,7 @@ function formatBytes(bytes: number): string {
 
 function TextBlock({ block }: { block: TextContent }) {
   return (
-    <pre className="text-sm whitespace-pre-wrap break-words bg-muted rounded-md p-3 font-mono">
+    <pre className="text-sm whitespace-pre-wrap break-words bg-foreground/[0.02] border-2 border-foreground/10 p-6 font-mono text-foreground leading-relaxed">
       {block.text}
     </pre>
   );
@@ -104,9 +104,9 @@ function FormattedContent({ result }: { result: ToolCallResult }) {
         .join("\n") ?? "Tool call failed";
 
     return (
-      <div className="flex gap-2 items-start bg-destructive/10 border border-destructive/20 rounded-md p-3">
-        <AlertCircleIcon className="size-4 text-destructive mt-0.5 shrink-0" />
-        <pre className="text-sm text-destructive whitespace-pre-wrap break-words">
+      <div className="flex gap-4 items-start bg-foreground text-background border-2 border-foreground p-6 font-mono">
+        <AlertCircleIcon className="size-6 text-background mt-0.5 shrink-0" />
+        <pre className="text-sm text-background whitespace-pre-wrap break-words font-bold uppercase tracking-wide">
           {errorText}
         </pre>
       </div>
@@ -160,49 +160,51 @@ export function ResponseViewer({ result, meta }: ResponseViewerProps) {
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-6">
       {/* Meta bar */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <Badge variant={result.isError ? "destructive" : "secondary"}>
-          {result.isError ? "Error" : "Success"}
-        </Badge>
-        <span className="text-xs text-muted-foreground">{meta.latencyMs}ms</span>
-        <span className="text-xs text-muted-foreground">
+      <div className="flex items-center gap-4 flex-wrap pb-6 border-b-2 border-foreground/10">
+        <div className={`px-3 py-1 font-mono text-xs font-bold uppercase tracking-widest border-2 ${result.isError ? "border-foreground bg-foreground text-background" : "border-foreground/20 text-foreground"}`}>
+          {result.isError ? "ERROR" : "SUCCESS"}
+        </div>
+        <span className="text-xs font-mono font-bold uppercase tracking-widest text-foreground/40">{meta.latencyMs}MS</span>
+        <span className="text-xs font-mono font-bold uppercase tracking-widest text-foreground/40">
           {formatBytes(meta.responseBytes)}
         </span>
-        <span className="text-xs text-muted-foreground ml-auto">
-          {new Date(meta.timestamp).toLocaleTimeString()}
+        <span className="text-xs font-mono font-bold uppercase tracking-widest text-foreground/40 ml-auto mr-4 group hover:text-foreground cursor-default transition-colors">
+          <span className="text-foreground/20 mr-2 group-hover:text-foreground/40 transition-colors">TS</span>{new Date(meta.timestamp).toLocaleTimeString()}
         </span>
-        <Button variant="outline" size="sm" onClick={handleCopy} className="gap-1.5">
-          {copied ? (
-            <>
-              <CheckIcon className="size-3.5" />
-              Copied
-            </>
-          ) : (
-            <>
-              <CopyIcon className="size-3.5" />
-              Copy
-            </>
-          )}
-        </Button>
-        <Button variant="outline" size="sm" onClick={handleDownload} className="gap-1.5">
-          <DownloadIcon className="size-3.5" />
-          Download
-        </Button>
+        <div className="flex gap-2">
+          <button onClick={handleCopy} className="inline-flex items-center justify-center gap-2 border-2 border-foreground/20 text-foreground px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-widest hover:border-foreground transition-colors w-28">
+            {copied ? (
+              <>
+                <CheckIcon className="size-3.5" />
+                COPIED
+              </>
+            ) : (
+              <>
+                <CopyIcon className="size-3.5" />
+                COPY
+              </>
+            )}
+          </button>
+          <button onClick={handleDownload} className="inline-flex items-center justify-center gap-2 border-2 border-foreground/20 text-foreground px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-widest hover:border-foreground transition-colors">
+            <DownloadIcon className="size-3.5" />
+            DOWNLOAD
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="formatted">
-        <TabsList>
-          <TabsTrigger value="formatted">Formatted</TabsTrigger>
-          <TabsTrigger value="raw">Raw JSON</TabsTrigger>
+      <Tabs defaultValue="formatted" className="rounded-none">
+        <TabsList className="flex border-b-2 border-foreground/10 bg-transparent h-12 p-0 justify-start w-fit">
+          <TabsTrigger value="formatted" className="rounded-none border-x-2 border-t-2 border-transparent data-[state=active]:border-foreground/10 data-[state=active]:bg-foreground/[0.02] data-[state=active]:text-foreground h-full px-8 font-mono uppercase tracking-widest text-xs font-bold transition-all data-[state=inactive]:text-foreground/40 hover:text-foreground">FORMATTED</TabsTrigger>
+          <TabsTrigger value="raw" className="rounded-none border-r-2 border-t-2 border-transparent data-[state=active]:border-foreground/10 data-[state=active]:bg-foreground/[0.02] data-[state=active]:text-foreground h-full px-8 font-mono uppercase tracking-widest text-xs font-bold transition-all data-[state=inactive]:text-foreground/40 hover:text-foreground">RAW JSON</TabsTrigger>
         </TabsList>
-        <TabsContent value="formatted" className="mt-3">
+        <TabsContent value="formatted" className="mt-6">
           <FormattedContent result={result} />
         </TabsContent>
-        <TabsContent value="raw" className="mt-3">
-          <pre className="text-xs font-mono bg-muted rounded-md p-3 overflow-auto max-h-96 whitespace-pre-wrap break-words">
+        <TabsContent value="raw" className="mt-6">
+          <pre className="text-sm font-mono bg-foreground/[0.02] border-2 border-foreground/10 p-6 overflow-auto max-h-[60vh] whitespace-pre-wrap break-words text-foreground">
             {rawJson}
           </pre>
         </TabsContent>

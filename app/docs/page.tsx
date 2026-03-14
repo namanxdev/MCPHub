@@ -139,9 +139,9 @@ export default function DocsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
                 {[
                   {
-                    title: "GitHub Server",
-                    desc: "Generate a Fine-grained Personal Access Token (PAT) with repo-level read/write permissions. Pass it as an environment variable:",
-                    code: "GITHUB_PERSONAL_ACCESS_TOKEN=ghp_xxx node build/index.js",
+                    title: "GitHub Server (Via mcp-proxy)",
+                    desc: "Since GitHub runs locally via stdio and MCPHub is a web app, you must wrap it in an SSE server using mcp-proxy. Generate a PAT with repo permissions, then run this in a terminal:",
+                    code: 'GITHUB_PERSONAL_ACCESS_TOKEN="ghp_xxx" npx -y mcp-proxy@latest --shell -- npx -y @modelcontextprotocol/server-github',
                   },
                   {
                     title: "Slack Server",

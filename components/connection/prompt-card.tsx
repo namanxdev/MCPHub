@@ -1,5 +1,3 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import type { Prompt } from "@/stores/connection-store";
 
 interface PromptCardProps {
@@ -10,37 +8,34 @@ export function PromptCard({ prompt }: PromptCardProps) {
   const args = prompt.arguments ?? [];
 
   return (
-    <Card className="gap-3 py-4">
-      <CardHeader className="px-4 pb-0">
-        <CardTitle className="font-mono text-sm font-semibold">
+    <div className="border-b-2 border-foreground/10 py-6 px-6 group hover:bg-foreground/5 transition-colors duration-300">
+      <div className="pb-4">
+        <h3 className="font-mono text-base font-bold uppercase tracking-tight text-foreground">
           {prompt.name}
-        </CardTitle>
-      </CardHeader>
+        </h3>
+      </div>
 
-      <CardContent className="px-4 flex flex-col gap-3">
+      <div className="flex flex-col gap-5">
         {prompt.description && (
-          <p className="text-sm text-muted-foreground">{prompt.description}</p>
+          <p className="text-sm font-medium text-foreground/60 leading-[1.6] max-w-[90%]">{prompt.description}</p>
         )}
 
         {args.length > 0 && (
-          <div className="flex flex-col gap-1.5">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+          <div className="flex flex-col gap-3">
+            <p className="text-[10px] font-bold text-foreground/40 uppercase tracking-widest font-mono">
               Arguments
             </p>
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col">
               {args.map((arg) => (
-                <div key={arg.name} className="flex items-baseline gap-2 text-xs">
-                  <code className="font-mono font-medium">{arg.name}</code>
+                <div key={arg.name} className="flex items-baseline gap-3 text-xs border-t border-foreground/5 py-2">
+                  <code className="font-mono font-bold">{arg.name}</code>
                   {arg.required && (
-                    <Badge
-                      variant="secondary"
-                      className="text-[10px] px-1 py-0 h-auto"
-                    >
-                      required
-                    </Badge>
+                    <span className="text-background bg-foreground px-1 py-[1px] text-[9px] uppercase tracking-widest">
+                      REQ
+                    </span>
                   )}
                   {arg.description && (
-                    <span className="text-muted-foreground">
+                    <span className="text-foreground/60 truncate max-w-[200px] lg:max-w-[300px]">
                       — {arg.description}
                     </span>
                   )}
@@ -49,7 +44,7 @@ export function PromptCard({ prompt }: PromptCardProps) {
             </div>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

@@ -58,116 +58,111 @@ export function ConnectForm() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="server-url">Server URL</Label>
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-3">
+        <Label htmlFor="server-url" className="font-mono text-[10px] font-bold uppercase tracking-widest text-foreground/60">Server URL</Label>
         <Input
           id="server-url"
           type="url"
-          placeholder="https://your-mcp-server.com/sse"
+          placeholder="HTTPS://YOUR-MCP-SERVER.COM/SSE"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           onKeyDown={handleKeyDown}
           disabled={isConnecting}
-          className="font-mono text-sm"
+          className="h-12 rounded-none border-2 border-foreground/20 bg-foreground/[0.02] px-4 font-mono text-sm focus-visible:ring-0 focus-visible:border-foreground transition-colors uppercase"
         />
       </div>
 
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="transport-select">Transport</Label>
+      <div className="flex flex-col gap-3">
+        <Label htmlFor="transport-select" className="font-mono text-[10px] font-bold uppercase tracking-widest text-foreground/60">Transport Protocol</Label>
         <Select
           value={transport}
           onValueChange={(v) => setTransport(v as "sse" | "streamable-http")}
           disabled={isConnecting}
         >
-          <SelectTrigger id="transport-select" className="w-48">
+          <SelectTrigger id="transport-select" className="w-full h-12 rounded-none border-2 border-foreground/20 bg-foreground/[0.02] px-4 font-mono text-sm font-bold tracking-widest uppercase focus:ring-0 focus:border-foreground">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="sse">SSE</SelectItem>
-            <SelectItem value="streamable-http">Streamable HTTP</SelectItem>
+          <SelectContent className="rounded-none border-2 border-foreground">
+            <SelectItem value="sse" className="font-mono text-xs uppercase cursor-pointer rounded-none focus:bg-foreground focus:text-background font-bold tracking-widest">SSE</SelectItem>
+            <SelectItem value="streamable-http" className="font-mono text-xs uppercase cursor-pointer rounded-none focus:bg-foreground focus:text-background font-bold tracking-widest">Streamable HTTP</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-4 mt-2">
         <button
           type="button"
           onClick={() => setShowHeaders((v) => !v)}
-          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors w-fit"
+          className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-widest text-foreground/40 hover:text-foreground transition-colors w-fit group"
         >
-          {showHeaders ? (
-            <ChevronUpIcon className="size-4" />
-          ) : (
-            <ChevronDownIcon className="size-4" />
-          )}
-          Authentication Headers
+          <span className="border border-foreground/20 p-0.5 group-hover:border-foreground/50 transition-colors">
+            {showHeaders ? <ChevronUpIcon className="size-3" /> : <ChevronDownIcon className="size-3" />}
+          </span>
+          AUTHENTICATION HEADERS
           {headers.length > 0 && (
-            <span className="ml-1 text-xs bg-muted text-muted-foreground rounded-full px-1.5 py-0.5">
+            <span className="ml-2 text-[10px] bg-foreground text-background rounded-none px-1.5 py-0 font-bold">
               {headers.length}
             </span>
           )}
         </button>
 
         {showHeaders && (
-          <div className="flex flex-col gap-2 pl-1 border-l-2 border-border ml-1">
+          <div className="flex flex-col gap-3 pl-4 border-l-2 border-foreground/10 ml-2">
             {headers.map((header, i) => (
-              <div key={i} className="flex items-center gap-2">
+              <div key={i} className="flex flex-col sm:flex-row items-center gap-3">
                 <Input
-                  placeholder="Header name"
+                  placeholder="HEADER-NAME"
                   value={header.key}
                   onChange={(e) => updateHeader(i, "key", e.target.value)}
                   disabled={isConnecting}
-                  className="font-mono text-sm flex-1"
+                  className="font-mono text-xs rounded-none border-2 border-foreground/20 bg-foreground/[0.02] h-10 px-3 flex-1 focus-visible:ring-0 focus-visible:border-foreground uppercase"
                 />
                 <Input
-                  placeholder="Value"
+                  placeholder="VALUE"
                   value={header.value}
                   onChange={(e) => updateHeader(i, "value", e.target.value)}
                   disabled={isConnecting}
-                  className="font-mono text-sm flex-1"
+                  className="font-mono text-xs rounded-none border-2 border-foreground/20 bg-foreground/[0.02] h-10 px-3 flex-1 focus-visible:ring-0 focus-visible:border-foreground"
                 />
-                <Button
+                <button
                   type="button"
-                  variant="ghost"
-                  size="icon-sm"
                   onClick={() => removeHeader(i)}
                   disabled={isConnecting}
+                  className="shrink-0 p-2 hover:bg-foreground hover:text-background transition-colors text-foreground/50 border-2 border-transparent hover:border-foreground disabled:opacity-50"
                   aria-label="Remove header"
                 >
-                  <Trash2Icon />
-                </Button>
+                  <Trash2Icon className="size-4" />
+                </button>
               </div>
             ))}
-            <Button
+            <button
               type="button"
-              variant="outline"
-              size="sm"
               onClick={addHeader}
               disabled={isConnecting}
-              className="w-fit"
+              className="inline-flex items-center justify-center gap-2 border-2 border-foreground/20 text-foreground px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-widest hover:border-foreground transition-colors w-fit disabled:opacity-50"
             >
-              <PlusIcon />
-              Add Header
-            </Button>
+              <PlusIcon className="size-3" />
+              ADD HEADER
+            </button>
           </div>
         )}
       </div>
 
-      <Button
+      <button
         onClick={handleConnect}
         disabled={isConnecting || !url.trim()}
-        className="w-full"
+        className="mt-6 w-full inline-flex items-center justify-center gap-3 border-2 border-foreground bg-background text-foreground px-6 py-4 font-mono text-lg font-bold uppercase tracking-widest hover:bg-foreground hover:text-background transition-colors disabled:opacity-50 disabled:pointer-events-none"
       >
         {isConnecting ? (
           <>
-            <Loader2Icon className="animate-spin" />
-            Connecting...
+            <Loader2Icon className="size-5 animate-spin" />
+            CONNECTING...
           </>
         ) : (
-          "Connect"
+          "INITIALIZE"
         )}
-      </Button>
+      </button>
     </div>
   );
 }

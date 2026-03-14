@@ -23,55 +23,55 @@ export function ToolCard({ tool }: ToolCardProps) {
   const paramNames = properties ? Object.keys(properties) : [];
 
   return (
-    <Card className="gap-3 py-4">
-      <CardHeader className="px-4 pb-0">
+    <div className="border-b-2 border-foreground/10 py-6 px-6 group hover:bg-foreground/5 transition-colors duration-300">
+      <div className="pb-4">
         <div className="flex items-start justify-between gap-2">
-          <CardTitle className="font-mono text-sm font-semibold">
+          <h3 className="font-mono text-base font-bold uppercase tracking-tight text-foreground">
             {tool.name}
-          </CardTitle>
-          <div className="flex items-center gap-1 flex-shrink-0">
+          </h3>
+          <div className="flex items-center gap-2 flex-shrink-0">
             {tool.annotations?.readOnlyHint && (
-              <Badge variant="secondary" className="text-xs">
+              <Badge variant="outline" className="text-[10px] rounded-none border-foreground text-foreground px-1.5 py-0 uppercase tracking-widest font-mono">
                 read-only
               </Badge>
             )}
             {tool.annotations?.destructiveHint && (
-              <Badge variant="destructive" className="text-xs">
+              <Badge variant="destructive" className="text-[10px] rounded-none bg-foreground text-background px-1.5 py-0 uppercase tracking-widest font-mono">
                 destructive
               </Badge>
             )}
           </div>
         </div>
-      </CardHeader>
+      </div>
 
-      <CardContent className="px-4 flex flex-col gap-3">
+      <div className="flex flex-col gap-5">
         {tool.description && (
-          <p className="text-sm text-muted-foreground">{tool.description}</p>
+          <p className="text-sm font-medium text-foreground/60 leading-[1.6] max-w-[90%]">{tool.description}</p>
         )}
 
         {paramNames.length > 0 && (
-          <div className="flex flex-col gap-1.5">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+          <div className="flex flex-col gap-2">
+            <p className="text-[10px] font-bold text-foreground/40 uppercase tracking-widest font-mono">
               Parameters
             </p>
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col">
               {paramNames.map((name) => {
                 const param = properties![name];
                 const isRequired = required?.includes(name);
                 return (
                   <div
                     key={name}
-                    className="flex items-baseline gap-2 text-xs"
+                    className="flex items-baseline gap-3 text-xs border-t border-foreground/5 py-2"
                   >
-                    <code className="font-mono font-medium">{name}</code>
+                    <code className="font-mono font-bold">{name}</code>
                     {isRequired && (
-                      <span className="text-destructive text-[10px]">required</span>
+                      <span className="text-background bg-foreground px-1 py-[1px] text-[9px] uppercase tracking-widest">req</span>
                     )}
                     {param?.type && (
-                      <span className="text-muted-foreground">{param.type}</span>
+                      <span className="text-foreground/40 font-mono text-[10px] uppercase tracking-wider">{param.type}</span>
                     )}
                     {param?.description && (
-                      <span className="text-muted-foreground truncate">
+                      <span className="text-foreground/60 truncate max-w-[200px] lg:max-w-[300px]">
                         — {param.description}
                       </span>
                     )}
@@ -87,33 +87,29 @@ export function ToolCard({ tool }: ToolCardProps) {
             <button
               type="button"
               onClick={() => setShowSchema((v) => !v)}
-              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest font-bold text-foreground/40 hover:text-foreground transition-colors"
             >
-              {showSchema ? (
-                <ChevronUpIcon className="size-3" />
-              ) : (
-                <ChevronDownIcon className="size-3" />
-              )}
-              {showSchema ? "Hide" : "Show"} full schema
+              <span className="border border-foreground/20 p-0.5">
+                {showSchema ? <ChevronUpIcon className="size-3" /> : <ChevronDownIcon className="size-3" />}
+              </span>
+              {showSchema ? "Hide Schema" : "Show Schema"}
             </button>
             {showSchema && (
-              <pre className="mt-2 text-xs bg-muted rounded-md p-3 overflow-x-auto">
+              <pre className="mt-3 text-xs bg-foreground/5 border-2 border-foreground/10 rounded-none p-4 overflow-x-auto text-foreground/80 font-medium">
                 {JSON.stringify(tool.inputSchema, null, 2)}
               </pre>
             )}
           </div>
         )}
 
-        <Button
-          size="sm"
-          variant="outline"
+        <button
           onClick={() => selectTool(tool.name)}
-          className="w-fit"
+          className="mt-2 group/btn relative inline-flex items-center justify-between w-full border-2 border-foreground px-4 py-2 font-mono text-sm font-bold uppercase tracking-widest hover:bg-foreground hover:text-background transition-colors"
         >
-          Test in Playground
-          <ArrowRightIcon />
-        </Button>
-      </CardContent>
-    </Card>
+          <span>Test in Playground</span>
+          <ArrowRightIcon className="size-4 group-hover/btn:translate-x-1 transition-transform" />
+        </button>
+      </div>
+    </div>
   );
 }

@@ -1,5 +1,3 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import type { Resource } from "@/stores/connection-store";
 
 interface ResourceCardProps {
@@ -8,28 +6,28 @@ interface ResourceCardProps {
 
 export function ResourceCard({ resource }: ResourceCardProps) {
   return (
-    <Card className="gap-3 py-4">
-      <CardHeader className="px-4 pb-0">
-        <div className="flex items-start justify-between gap-2">
-          <CardTitle className="font-mono text-sm font-semibold break-all">
+    <div className="border-b-2 border-foreground/10 py-6 px-6 group hover:bg-foreground/5 transition-colors duration-300">
+      <div className="pb-4">
+        <div className="flex items-start justify-between gap-4">
+          <h3 className="font-mono text-sm font-bold tracking-tight text-foreground break-all">
             {resource.uri}
-          </CardTitle>
+          </h3>
           {resource.mimeType && (
-            <Badge variant="outline" className="text-xs flex-shrink-0 font-mono">
+            <span className="flex-shrink-0 text-[9px] uppercase tracking-widest font-mono border border-foreground/20 px-1.5 py-0.5 text-foreground/60 whitespace-nowrap">
               {resource.mimeType}
-            </Badge>
+            </span>
           )}
         </div>
-      </CardHeader>
+      </div>
 
-      <CardContent className="px-4 flex flex-col gap-1">
+      <div className="flex flex-col gap-3">
         {resource.name && (
-          <p className="text-sm font-medium">{resource.name}</p>
+          <p className="font-mono text-sm font-bold uppercase tracking-wide text-foreground">{resource.name}</p>
         )}
         {resource.description && (
-          <p className="text-sm text-muted-foreground">{resource.description}</p>
+          <p className="text-sm font-medium text-foreground/60 leading-[1.6] max-w-[90%]">{resource.description}</p>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

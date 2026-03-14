@@ -56,25 +56,25 @@ function SchemaField({
   // Handle enum
   if (schema.enum) {
     return (
-      <div className="space-y-1.5">
-        <Label htmlFor={fieldId}>
+      <div className="space-y-3">
+        <Label htmlFor={fieldId} className="font-mono text-[10px] font-bold uppercase tracking-widest text-foreground/60 flex items-center gap-2">
           {label}
-          {required && <span className="text-destructive ml-1">*</span>}
+          {required && <span className="bg-foreground text-background px-1 py-0.5 text-[8px]">REQ</span>}
         </Label>
         <Select value={String(value ?? "")} onValueChange={onChange}>
-          <SelectTrigger id={fieldId} className="w-full">
+          <SelectTrigger id={fieldId} className="w-full h-12 rounded-none border-2 border-foreground/20 bg-foreground/[0.02] font-mono text-sm focus:ring-0 focus:border-foreground">
             <SelectValue placeholder="Select..." />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="rounded-none border-2 border-foreground">
             {schema.enum.map((opt) => (
-              <SelectItem key={String(opt)} value={String(opt)}>
+              <SelectItem key={String(opt)} value={String(opt)} className="font-mono text-xs uppercase cursor-pointer rounded-none focus:bg-foreground focus:text-background">
                 {String(opt)}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
         {schema.description && (
-          <p className="text-xs text-muted-foreground">{schema.description}</p>
+          <p className="text-xs text-foreground/50 border-l-2 border-foreground/20 pl-3 leading-relaxed mt-2">{schema.description}</p>
         )}
       </div>
     );
@@ -107,10 +107,10 @@ function SchemaField({
   // Number / Integer
   if (type === "number" || type === "integer") {
     return (
-      <div className="space-y-1.5">
-        <Label htmlFor={fieldId}>
+      <div className="space-y-3">
+        <Label htmlFor={fieldId} className="font-mono text-[10px] font-bold uppercase tracking-widest text-foreground/60 flex items-center gap-2">
           {label}
-          {required && <span className="text-destructive ml-1">*</span>}
+          {required && <span className="bg-foreground text-background px-1 py-0.5 text-[8px]">REQ</span>}
         </Label>
         <Input
           id={fieldId}
@@ -125,9 +125,10 @@ function SchemaField({
           max={schema.maximum}
           step={type === "integer" ? 1 : undefined}
           placeholder={schema.description}
+          className="h-12 rounded-none border-2 border-foreground/20 bg-foreground/[0.02] px-4 font-mono text-sm focus-visible:ring-0 focus-visible:border-foreground transition-colors"
         />
         {schema.description && (
-          <p className="text-xs text-muted-foreground">{schema.description}</p>
+          <p className="text-xs text-foreground/50 border-l-2 border-foreground/20 pl-3 leading-relaxed mt-2">{schema.description}</p>
         )}
       </div>
     );
@@ -226,10 +227,10 @@ function SchemaField({
   const isLong = schema.maxLength && schema.maxLength > 200;
   if (isLong) {
     return (
-      <div className="space-y-1.5">
-        <Label htmlFor={fieldId}>
+      <div className="space-y-3">
+        <Label htmlFor={fieldId} className="font-mono text-[10px] font-bold uppercase tracking-widest text-foreground/60 flex items-center gap-2">
           {label}
-          {required && <span className="text-destructive ml-1">*</span>}
+          {required && <span className="bg-foreground text-background px-1 py-0.5 text-[8px]">REQ</span>}
         </Label>
         <Textarea
           id={fieldId}
@@ -237,9 +238,10 @@ function SchemaField({
           onChange={(e) => onChange(e.target.value)}
           placeholder={schema.description}
           rows={4}
+          className="rounded-none border-2 border-foreground/20 bg-foreground/[0.02] p-4 font-mono text-sm focus-visible:ring-0 focus-visible:border-foreground transition-colors"
         />
         {schema.description && (
-          <p className="text-xs text-muted-foreground">{schema.description}</p>
+          <p className="text-xs text-foreground/50 border-l-2 border-foreground/20 pl-3 leading-relaxed mt-2">{schema.description}</p>
         )}
       </div>
     );
@@ -247,10 +249,10 @@ function SchemaField({
 
   // String (default)
   return (
-    <div className="space-y-1.5">
-      <Label htmlFor={fieldId}>
+    <div className="space-y-3">
+      <Label htmlFor={fieldId} className="font-mono text-[10px] font-bold uppercase tracking-widest text-foreground/60 flex items-center gap-2">
         {label}
-        {required && <span className="text-destructive ml-1">*</span>}
+        {required && <span className="bg-foreground text-background px-1 py-0.5 text-[8px]">REQ</span>}
       </Label>
       <Input
         id={fieldId}
@@ -266,9 +268,10 @@ function SchemaField({
         placeholder={schema.description}
         maxLength={schema.maxLength}
         minLength={schema.minLength}
+        className="h-12 rounded-none border-2 border-foreground/20 bg-foreground/[0.02] px-4 font-mono text-sm focus-visible:ring-0 focus-visible:border-foreground transition-colors"
       />
       {schema.description && (
-        <p className="text-xs text-muted-foreground">{schema.description}</p>
+        <p className="text-xs text-foreground/50 border-l-2 border-foreground/20 pl-3 leading-relaxed mt-2">{schema.description}</p>
       )}
     </div>
   );

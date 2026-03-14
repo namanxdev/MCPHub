@@ -135,48 +135,44 @@ export function ParamForm({ schema }: ParamFormProps) {
   return (
     <div className="flex flex-col gap-3">
       {/* Toolbar */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <Button
-          variant="outline"
-          size="sm"
+      <div className="flex items-center gap-3 flex-wrap mb-6 border-b-2 border-foreground/10 pb-6">
+        <button
           onClick={handleToggleJsonMode}
-          className="gap-1.5"
+          className="inline-flex items-center justify-center gap-2 border-2 border-foreground text-foreground px-4 py-2 font-mono text-xs font-bold uppercase tracking-widest hover:bg-foreground hover:text-background transition-colors"
         >
-          <Code2Icon className="size-3.5" />
-          {jsonMode ? "Form view" : "Edit as JSON"}
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
+          <Code2Icon className="size-4" />
+          {jsonMode ? "FORM VIEW" : "EDIT AS JSON"}
+        </button>
+        <button
           onClick={handleReset}
-          className="gap-1.5"
+          className="inline-flex items-center justify-center gap-2 border-2 border-foreground/20 text-foreground px-4 py-2 font-mono text-xs font-bold uppercase tracking-widest hover:border-foreground transition-colors"
         >
-          <RotateCcwIcon className="size-3.5" />
-          Reset
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
+          <RotateCcwIcon className="size-4" />
+          RESET
+        </button>
+        <button
           onClick={handleSavePreset}
-          className="gap-1.5"
+          className="inline-flex items-center justify-center gap-2 border-2 border-foreground/20 text-foreground px-4 py-2 font-mono text-xs font-bold uppercase tracking-widest hover:border-foreground transition-colors"
         >
-          <BookmarkIcon className="size-3.5" />
-          Save preset
-        </Button>
+          <BookmarkIcon className="size-4" />
+          SAVE PRESET
+        </button>
         {/* Load preset select */}
         <Select onValueChange={handleLoadPreset} onOpenChange={(open) => { if (open) handleOpenPresets(); }}>
-          <SelectTrigger className="h-8 w-36 text-xs gap-1.5">
-            <FolderOpenIcon className="size-3.5 text-muted-foreground" />
-            <SelectValue placeholder="Load preset" />
+          <SelectTrigger className="h-10 w-48 rounded-none border-2 border-foreground/20 bg-transparent text-xs font-mono font-bold uppercase tracking-widest gap-2 focus:ring-0 focus:border-foreground">
+            <div className="flex items-center gap-2">
+              <FolderOpenIcon className="size-4 text-foreground/50" />
+              <SelectValue placeholder="LOAD PRESET" />
+            </div>
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="rounded-none border-2 border-foreground">
             {presets.length === 0 ? (
-              <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                No saved presets
+              <div className="px-4 py-3 text-xs font-mono uppercase tracking-widest text-foreground/50">
+                NO PRESETS
               </div>
             ) : (
               presets.map((p) => (
-                <SelectItem key={p.savedAt} value={p.name}>
+                <SelectItem key={p.savedAt} value={p.name} className="font-mono text-xs uppercase cursor-pointer rounded-none focus:bg-foreground focus:text-background">
                   {p.name}
                 </SelectItem>
               ))
@@ -187,17 +183,19 @@ export function ParamForm({ schema }: ParamFormProps) {
 
       {/* Form or JSON editor */}
       {jsonMode ? (
-        <div className="space-y-1.5">
-          <Label>Arguments (JSON)</Label>
+        <div className="space-y-4">
+          <Label className="font-mono text-xs font-bold uppercase tracking-widest text-foreground/60">Arguments (JSON)</Label>
           <Textarea
             value={jsonText}
             onChange={(e) => handleJsonChange(e.target.value)}
-            rows={10}
-            className="font-mono text-xs"
+            rows={12}
+            className="font-mono text-sm rounded-none border-2 border-foreground/10 bg-foreground/[0.02] p-4 focus-visible:ring-0 focus-visible:border-foreground transition-colors"
             spellCheck={false}
           />
           {jsonError && (
-            <p className="text-xs text-destructive">{jsonError}</p>
+            <p className="text-xs font-mono uppercase tracking-widest font-bold text-background bg-foreground px-4 py-2 mt-2 inline-block">
+              {jsonError}
+            </p>
           )}
         </div>
       ) : (

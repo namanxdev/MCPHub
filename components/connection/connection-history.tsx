@@ -3,8 +3,6 @@
 import { useEffect } from "react";
 import { ClockIcon, Trash2Icon, WifiIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardAction } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { useConnectionStore } from "@/stores/connection-store";
 import type { ConnectionHistoryEntry } from "@/stores/connection-store";
 import { useConnection } from "@/hooks/use-connection";
@@ -63,58 +61,56 @@ export function ConnectionHistory() {
   }
 
   return (
-    <Card className="gap-0 py-0 overflow-hidden">
-      <CardHeader className="px-4 py-3 border-b">
-        <CardTitle className="text-sm font-medium flex items-center gap-2">
-          <ClockIcon className="size-4" />
-          Recent Connections
-        </CardTitle>
-        <CardAction>
-          <Button
-            variant="ghost"
-            size="xs"
-            onClick={clearHistory}
-            className="text-muted-foreground hover:text-destructive"
-          >
-            <Trash2Icon />
-            Clear
-          </Button>
-        </CardAction>
-      </CardHeader>
+    <div className="border-2 border-foreground/10 bg-background overflow-hidden mt-6">
+      <div className="px-6 py-4 border-b-2 border-foreground/10 flex items-center justify-between bg-foreground/[0.02]">
+        <h2 className="text-sm font-mono font-bold tracking-widest uppercase flex items-center gap-3 text-foreground">
+          <ClockIcon className="size-4 text-foreground/50" />
+          RECENT CONNECTIONS
+        </h2>
+        <button
+          onClick={clearHistory}
+          className="flex items-center gap-2 border-2 border-transparent text-foreground/40 px-3 py-1 font-mono text-[10px] uppercase font-bold tracking-widest hover:border-foreground hover:bg-foreground hover:text-background transition-colors"
+        >
+          <Trash2Icon className="size-3" />
+          CLEAR
+        </button>
+      </div>
 
-      <CardContent className="px-0 py-0">
-        <ul className="divide-y">
+      <div className="p-0">
+        <div className="flex flex-col">
           {history.map((entry, i) => (
-            <li key={i} className="flex items-center gap-3 px-4 py-2.5 hover:bg-muted/50 transition-colors">
+            <div key={i} className="flex items-center gap-4 px-6 py-4 border-b border-foreground/5 last:border-b-0 group hover:bg-foreground/5 transition-colors">
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{entry.serverName}</p>
-                <p className="text-xs text-muted-foreground font-mono truncate">
+                <p className="font-mono text-sm font-bold uppercase tracking-wide truncate text-foreground">{entry.serverName}</p>
+                <p className="text-[10px] text-foreground/40 font-mono font-bold uppercase tracking-widest truncate mt-1">
                   {entry.url}
                 </p>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <Badge variant="outline" className="text-[10px] px-1 py-0 h-auto">
+                <div className="flex items-center gap-3 mt-3">
+                  <span className="font-mono text-[9px] uppercase tracking-widest border border-foreground/20 px-1.5 py-0.5 text-foreground/60">
                     {entry.transport}
-                  </Badge>
-                  <span className="text-xs text-muted-foreground">
-                    {entry.toolCount} {entry.toolCount === 1 ? "tool" : "tools"}
                   </span>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-foreground/40 font-bold">
+                    {entry.toolCount} {entry.toolCount === 1 ? "TOOL" : "TOOLS"}
+                  </span>
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-foreground/40 font-bold">
                     {formatRelativeTime(entry.connectedAt)}
                   </span>
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="icon-sm"
+              <button
                 onClick={() => handleReconnect(entry)}
+                className="shrink-0 p-3 hover:bg-foreground hover:text-background transition-colors text-foreground/50 border-2 border-transparent hover:border-foreground relative group/btn"
                 aria-label={`Reconnect to ${entry.serverName}`}
               >
-                <WifiIcon />
-              </Button>
-            </li>
+                <WifiIcon className="size-5" />
+                <span className="absolute -top-8 right-0 bg-foreground text-background px-2 py-1 font-mono text-[10px] uppercase tracking-widest opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                  RECONNECT
+                </span>
+              </button>
+            </div>
           ))}
-        </ul>
-      </CardContent>
-    </Card>
+        </div>
+      </div>
+    </div>
   );
 }
