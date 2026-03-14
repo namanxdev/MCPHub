@@ -15,6 +15,7 @@ const navLinks = [
   { href: "/registry", label: "Registry", desc: "Browse the public directory of MCP servers with live health badges." },
   { href: "/inspector", label: "Inspector", desc: "Capture and inspect every JSON-RPC message with timing data." },
   { href: "/dashboard", label: "Dashboard", desc: "Latency percentiles, uptime history, and error rates." },
+  { href: "/docs", label: "Docs", desc: "Learn how to use MCP servers, credentials, and CLI tools." },
 ];
 
 function NavLink({ href, label, desc, isActive }: { href: string; label: string; desc: string; isActive: boolean }) {
