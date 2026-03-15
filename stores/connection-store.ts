@@ -36,8 +36,9 @@ export interface Prompt {
 
 export interface ConnectionSession {
   sessionId: string;
-  url: string;
-  transport: "sse" | "streamable-http";
+  url?: string;
+  command?: string;
+  transport: "sse" | "streamable-http" | "stdio";
   serverInfo: ServerInfo;
   tools: Tool[];
   resources: Resource[];
@@ -46,14 +47,19 @@ export interface ConnectionSession {
 }
 
 export interface ConnectionHistoryEntry {
-  url: string;
-  transport: "sse" | "streamable-http";
+  url?: string;
+  command?: string;
+  transport: "sse" | "streamable-http" | "stdio";
   serverName: string;
   toolCount: number;
   connectedAt: Date;
 }
 
 type ConnectionStatus = "disconnected" | "connecting" | "connected" | "error";
+
+type LastConnectionParams =
+  | { url: string; transport: "sse" | "streamable-http" }
+  | { command: string; transport: "stdio" };
 
 interface ConnectionStore {
   // Active session
@@ -68,7 +74,7 @@ interface ConnectionStore {
   reconnectAttempts: number;
   maxReconnectAttempts: number;
   isReconnecting: boolean;
-  lastConnectionParams: { url: string; transport: "sse" | "streamable-http" } | null;
+  lastConnectionParams: LastConnectionParams | null;
 
   // Actions
   setConnecting: () => void;
@@ -82,7 +88,7 @@ interface ConnectionStore {
   setReconnecting: (v: boolean) => void;
   incrementReconnectAttempts: () => void;
   resetReconnect: () => void;
-  setLastConnectionParams: (params: { url: string; transport: "sse" | "streamable-http" } | null) => void;
+  setLastConnectionParams: (params: LastConnectionParams | null) => void;
 }
 
 export const useConnectionStore = create<ConnectionStore>((set) => ({
@@ -104,7 +110,10 @@ export const useConnectionStore = create<ConnectionStore>((set) => ({
       error: null,
       reconnectAttempts: 0,
       isReconnecting: false,
-      lastConnectionParams: { url: session.url, transport: session.transport },
+      lastConnectionParams:
+        session.transport === "stdio"
+          ? { command: session.command!, transport: "stdio" }
+          : { url: session.url!, transport: session.transport },
     }),
   setError: (error) => set({ status: "error", error }),
   setDisconnected: () =>
@@ -113,7 +122,11 @@ export const useConnectionStore = create<ConnectionStore>((set) => ({
     set((state) => ({
       history: [
         entry,
-        ...state.history.filter((h) => h.url !== entry.url),
+        ...state.history.filter((h) =>
+          entry.transport === "stdio"
+            ? h.command !== entry.command
+            : h.url !== entry.url
+        ),
       ].slice(0, 10),
     })),
   clearHistory: () => set({ history: [] }),

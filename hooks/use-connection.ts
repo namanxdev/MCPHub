@@ -3,22 +3,22 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useConnectionStore } from "@/stores/connection-store";
 
+export type ConnectParams =
+  | { transport: "sse" | "streamable-http"; url: string; headers?: Record<string, string> }
+  | { transport: "stdio"; command: string; env?: Record<string, string> };
+
 export function useConnection() {
   const store = useConnectionStore();
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const connect = useCallback(
-    async (
-      url: string,
-      transport: "sse" | "streamable-http",
-      headers: Record<string, string> = {}
-    ) => {
+    async (params: ConnectParams) => {
       store.setConnecting();
       try {
         const res = await fetch("/api/connect", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url, transport, headers }),
+          body: JSON.stringify(params),
         });
 
         const data = await res.json();
@@ -30,8 +30,9 @@ export function useConnection() {
 
         store.setConnected({
           sessionId: data.sessionId,
-          url,
-          transport,
+          url: params.transport !== "stdio" ? params.url : undefined,
+          command: params.transport === "stdio" ? params.command : undefined,
+          transport: params.transport,
           serverInfo: data.serverInfo,
           tools: data.capabilities.tools,
           resources: data.capabilities.resources,
@@ -40,8 +41,9 @@ export function useConnection() {
         });
 
         store.addToHistory({
-          url,
-          transport,
+          url: params.transport !== "stdio" ? params.url : undefined,
+          command: params.transport === "stdio" ? params.command : undefined,
+          transport: params.transport,
           serverName: data.serverInfo.name,
           toolCount: data.capabilities.tools.length,
           connectedAt: new Date(),
@@ -103,10 +105,7 @@ export function useConnection() {
     const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
 
     reconnectTimerRef.current = setTimeout(async () => {
-      const success = await connect(
-        lastConnectionParams.url,
-        lastConnectionParams.transport
-      );
+      const success = await connect(lastConnectionParams);
       if (!success) {
         store.setReconnecting(false);
         // Schedule next attempt

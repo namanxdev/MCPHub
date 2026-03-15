@@ -3,16 +3,20 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Loader2Icon, ArrowLeftIcon, ExternalLinkIcon } from "lucide-react";
+import { Loader2Icon, ArrowLeftIcon, ExternalLinkIcon, TerminalIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface ServerSummary {
   id: string;
   slug: string;
   name: string;
-  url: string;
+  url: string | null;
   transportType: string;
+  serverType?: string;
+  command?: string | null;
+  requiredEnvVars?: string[];
   shortDescription: string;
   authorName: string;
   connectionGuide: string | null;
@@ -60,11 +64,25 @@ export default function PlaygroundServerPage({
 
   function handleConnect() {
     if (!server) return;
-    const qs = new URLSearchParams({
-      url: server.url,
-      transport: server.transportType,
-    }).toString();
-    router.push(`/playground?${qs}`);
+
+    const isLocal = server.serverType === "local";
+
+    if (isLocal && server.command) {
+      const qs = new URLSearchParams({
+        transport: "stdio",
+        command: server.command,
+      });
+      if (server.requiredEnvVars && server.requiredEnvVars.length > 0) {
+        qs.set("requiredEnvVars", server.requiredEnvVars.join(","));
+      }
+      router.push(`/playground?${qs.toString()}`);
+    } else if (server.url) {
+      const qs = new URLSearchParams({
+        url: server.url,
+        transport: server.transportType,
+      }).toString();
+      router.push(`/playground?${qs}`);
+    }
   }
 
   if (loading) {
@@ -90,6 +108,8 @@ export default function PlaygroundServerPage({
     );
   }
 
+  const isLocal = server.serverType === "local";
+
   return (
     <div className="max-w-lg mx-auto px-4 py-12 flex flex-col gap-6">
       <Link
@@ -102,7 +122,15 @@ export default function PlaygroundServerPage({
 
       <Card>
         <CardHeader>
-          <CardTitle>{server.name}</CardTitle>
+          <div className="flex items-center gap-2">
+            <CardTitle>{server.name}</CardTitle>
+            {isLocal && (
+              <Badge variant="outline" className="font-mono text-xs gap-1">
+                <TerminalIcon className="size-3" />
+                Local
+              </Badge>
+            )}
+          </div>
           <p className="text-sm text-muted-foreground">
             by {server.authorName}
           </p>
@@ -111,10 +139,32 @@ export default function PlaygroundServerPage({
           <p className="text-sm text-muted-foreground">
             {server.shortDescription}
           </p>
-          <div className="rounded-md border bg-muted/40 px-3 py-2">
-            <p className="text-xs text-muted-foreground mb-0.5">Server URL</p>
-            <p className="font-mono text-sm break-all">{server.url}</p>
-          </div>
+
+          {isLocal && server.command ? (
+            <div className="rounded-md border bg-muted/40 px-3 py-2">
+              <p className="text-xs text-muted-foreground mb-0.5">Command</p>
+              <p className="font-mono text-sm break-all">{server.command}</p>
+            </div>
+          ) : server.url ? (
+            <div className="rounded-md border bg-muted/40 px-3 py-2">
+              <p className="text-xs text-muted-foreground mb-0.5">Server URL</p>
+              <p className="font-mono text-sm break-all">{server.url}</p>
+            </div>
+          ) : null}
+
+          {isLocal && server.requiredEnvVars && server.requiredEnvVars.length > 0 && (
+            <div className="rounded-md border bg-muted/40 px-3 py-2">
+              <p className="text-xs text-muted-foreground mb-1.5">Required Environment Variables</p>
+              <div className="flex flex-wrap gap-1.5">
+                {server.requiredEnvVars.map((v) => (
+                  <Badge key={v} variant="secondary" className="font-mono text-xs">
+                    {v}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+
           {server.connectionGuide && (
             <div className="rounded-md border border-amber-500/30 bg-amber-50/5 px-3 py-2">
               <p className="text-xs text-muted-foreground mb-1.5">How to Connect</p>

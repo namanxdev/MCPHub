@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { WrenchIcon, ExternalLinkIcon, PlayIcon } from "lucide-react";
+import { WrenchIcon, ExternalLinkIcon, PlayIcon, TerminalIcon } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -25,6 +25,7 @@ export interface ServerCardData {
   categories: string[];
   tags: string[];
   status: string;
+  serverType?: string;
   toolsCount: number;
   resourcesCount: number;
   promptsCount: number;
@@ -51,7 +52,8 @@ interface ServerCardProps {
 }
 
 export function ServerCard({ server }: ServerCardProps) {
-  const health = statusToHealth(server.status);
+  const isLocal = server.serverType === "local";
+  const health = isLocal ? ("unknown" as HealthStatus) : statusToHealth(server.status);
 
   return (
     <motion.div
@@ -78,14 +80,23 @@ export function ServerCard({ server }: ServerCardProps) {
                 by {server.authorName}
               </p>
             </div>
-            <div className="flex items-center">
-              {health === "healthy" && (
-                <span className="relative flex h-2 w-2 mr-1">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
-                </span>
+            <div className="flex items-center gap-1.5">
+              {isLocal ? (
+                <Badge variant="outline" className="text-xs font-mono gap-1">
+                  <TerminalIcon className="size-3" />
+                  Local
+                </Badge>
+              ) : (
+                <>
+                  {health === "healthy" && (
+                    <span className="relative flex h-2 w-2 mr-1">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+                    </span>
+                  )}
+                  <HealthBadge status={health} showLabel />
+                </>
               )}
-              <HealthBadge status={health} showLabel />
             </div>
           </div>
         </CardHeader>

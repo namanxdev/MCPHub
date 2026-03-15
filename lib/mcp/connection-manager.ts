@@ -1,19 +1,21 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { LATEST_PROTOCOL_VERSION } from "@modelcontextprotocol/sdk/types.js";
 import { ProtocolLogger } from "./protocol-logger";
 
 interface StoredConnection {
   client: Client;
-  transport: SSEClientTransport | StreamableHTTPClientTransport;
+  transport: SSEClientTransport | StreamableHTTPClientTransport | StdioClientTransport;
   serverInfo: {
     name: string;
     version: string;
     protocolVersion: string;
   };
-  url: string;
-  transport_type: "sse" | "streamable-http";
+  url?: string;
+  command?: string;
+  transport_type: "sse" | "streamable-http" | "stdio";
   connectedAt: Date;
   lastActivity: Date;
   logger: ProtocolLogger;
@@ -105,6 +107,72 @@ class ConnectionManager {
       serverInfo,
       url,
       transport_type: transportType,
+      connectedAt: new Date(),
+      lastActivity: new Date(),
+      logger,
+    });
+
+    return { sessionId, serverInfo, client };
+  }
+
+  async connectStdio(
+    command: string,
+    env?: Record<string, string>
+  ): Promise<{
+    sessionId: string;
+    serverInfo: StoredConnection["serverInfo"];
+    client: Client;
+  }> {
+    const sessionId = crypto.randomUUID();
+
+    const parts = command.split(/\s+/);
+    const [cmd, ...args] = parts;
+
+    const transport = new StdioClientTransport({
+      command: cmd,
+      args,
+      env: { ...process.env, ...env } as Record<string, string>,
+      stderr: "pipe",
+    });
+
+    const client = new Client(
+      { name: "mcphub", version: "1.0.0" },
+      { capabilities: {} }
+    );
+
+    await client.connect(transport);
+
+    const serverVersion = client.getServerVersion();
+    const serverInfo = {
+      name: serverVersion?.name ?? "Unknown",
+      version: serverVersion?.version ?? "0.0.0",
+      protocolVersion: LATEST_PROTOCOL_VERSION,
+    };
+
+    const logger = new ProtocolLogger();
+
+    // Patch transport.send to log outgoing messages
+    const originalSend = transport.send.bind(transport);
+    (transport as { send: typeof originalSend }).send = async (msg) => {
+      logger.logMessage("sent", msg);
+      return originalSend(msg);
+    };
+
+    // Patch transport.onmessage to log incoming messages
+    const originalOnmessage = transport.onmessage;
+    transport.onmessage = (msg) => {
+      logger.logMessage("received", msg);
+      if (originalOnmessage) {
+        originalOnmessage(msg);
+      }
+    };
+
+    this.connections.set(sessionId, {
+      client,
+      transport,
+      serverInfo,
+      command,
+      transport_type: "stdio",
       connectedAt: new Date(),
       lastActivity: new Date(),
       logger,

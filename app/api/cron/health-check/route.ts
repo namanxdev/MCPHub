@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { servers, serverHealthChecks } from "@/lib/db/schema";
-import { ne, eq, desc } from "drizzle-orm";
+import { ne, eq, desc, and } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   // Verify cron secret
@@ -16,7 +16,10 @@ export async function GET(request: NextRequest) {
   const allServers = await db
     .select()
     .from(servers)
-    .where(ne(servers.status, "removed"));
+    .where(and(
+      ne(servers.status, "removed"),
+      eq(servers.serverType, "hosted")
+    ));
 
   const results: Array<{
     serverId: string;
@@ -29,6 +32,10 @@ export async function GET(request: NextRequest) {
   for (const server of allServers) {
     const startTime = Date.now();
     try {
+      if (!server.url) {
+        throw new Error("Server has no URL configured");
+      }
+
       const { Client } = await import(
         "@modelcontextprotocol/sdk/client/index.js"
       );

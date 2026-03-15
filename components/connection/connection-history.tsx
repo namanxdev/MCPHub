@@ -2,7 +2,6 @@
 
 import { useEffect } from "react";
 import { ClockIcon, Trash2Icon, WifiIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { useConnectionStore } from "@/stores/connection-store";
 import type { ConnectionHistoryEntry } from "@/stores/connection-store";
 import { useConnection } from "@/hooks/use-connection";
@@ -57,7 +56,11 @@ export function ConnectionHistory() {
   if (history.length === 0) return null;
 
   async function handleReconnect(entry: ConnectionHistoryEntry) {
-    await connect(entry.url, entry.transport);
+    if (entry.transport === "stdio" && entry.command) {
+      await connect({ transport: "stdio", command: entry.command });
+    } else if (entry.url) {
+      await connect({ transport: entry.transport as "sse" | "streamable-http", url: entry.url });
+    }
   }
 
   return (
@@ -83,11 +86,11 @@ export function ConnectionHistory() {
               <div className="flex-1 min-w-0">
                 <p className="font-mono text-sm font-bold uppercase tracking-wide truncate text-foreground">{entry.serverName}</p>
                 <p className="text-[10px] text-foreground/40 font-mono font-bold uppercase tracking-widest truncate mt-1">
-                  {entry.url}
+                  {entry.transport === "stdio" ? entry.command : entry.url}
                 </p>
                 <div className="flex items-center gap-3 mt-3">
                   <span className="font-mono text-[9px] uppercase tracking-widest border border-foreground/20 px-1.5 py-0.5 text-foreground/60">
-                    {entry.transport}
+                    {entry.transport === "stdio" ? "STDIO" : entry.transport}
                   </span>
                   <span className="font-mono text-[10px] uppercase tracking-widest text-foreground/40 font-bold">
                     {entry.toolCount} {entry.toolCount === 1 ? "TOOL" : "TOOLS"}

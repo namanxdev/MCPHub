@@ -25,6 +25,7 @@ interface FieldErrors {
   authorUrl?: string;
   repoUrl?: string;
   transportType?: string;
+  command?: string;
 }
 
 interface SubmitSuccess {
@@ -33,7 +34,10 @@ interface SubmitSuccess {
   status: string;
 }
 
+type ServerType = "hosted" | "local";
+
 export function SubmitForm() {
+  const [serverType, setServerType] = useState<ServerType>("hosted");
   const [url, setUrl] = useState("");
   const [name, setName] = useState("");
   const [shortDescription, setShortDescription] = useState("");
@@ -44,11 +48,18 @@ export function SubmitForm() {
   const [authorUrl, setAuthorUrl] = useState("");
   const [repoUrl, setRepoUrl] = useState("");
   const [transportType, setTransportType] = useState<"sse" | "streamable-http">("sse");
+  const [connectionGuide, setConnectionGuide] = useState("");
+
+  // Local server fields
+  const [command, setCommand] = useState("");
+  const [requiredEnvVars, setRequiredEnvVars] = useState("");
 
   const [errors, setErrors] = useState<FieldErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState<SubmitSuccess | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
+
+  const isLocal = serverType === "local";
 
   const toggleCategory = useCallback((value: string) => {
     setSelectedCategories((prev) =>
@@ -59,12 +70,17 @@ export function SubmitForm() {
   function validate(): boolean {
     const errs: FieldErrors = {};
 
-    if (!url.trim()) errs.url = "URL is required";
-    else {
-      try {
-        new URL(url);
-      } catch {
-        errs.url = "Must be a valid URL";
+    if (isLocal) {
+      if (!command.trim()) errs.command = "Command is required";
+      else if (command.length > 500) errs.command = "Max 500 characters";
+    } else {
+      if (!url.trim()) errs.url = "URL is required";
+      else {
+        try {
+          new URL(url);
+        } catch {
+          errs.url = "Must be a valid URL";
+        }
       }
     }
 
@@ -116,21 +132,37 @@ export function SubmitForm() {
         .map((t) => t.trim())
         .filter(Boolean);
 
+      const parsedEnvVars = requiredEnvVars
+        .split(",")
+        .map((v) => v.trim())
+        .filter(Boolean);
+
+      const payload: Record<string, unknown> = {
+        name,
+        shortDescription,
+        longDescription: longDescription || undefined,
+        categories: selectedCategories,
+        tags: parsedTags,
+        authorName,
+        authorUrl: authorUrl || undefined,
+        repoUrl: repoUrl || undefined,
+        serverType,
+        connectionGuide: connectionGuide || undefined,
+      };
+
+      if (isLocal) {
+        payload.command = command;
+        payload.transportType = "stdio";
+        payload.requiredEnvVars = parsedEnvVars;
+      } else {
+        payload.url = url;
+        payload.transportType = transportType;
+      }
+
       const res = await fetch("/api/registry", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          url,
-          name,
-          shortDescription,
-          longDescription: longDescription || undefined,
-          categories: selectedCategories,
-          tags: parsedTags,
-          authorName,
-          authorUrl: authorUrl || undefined,
-          repoUrl: repoUrl || undefined,
-          transportType,
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
@@ -190,45 +222,123 @@ export function SubmitForm() {
         </div>
       )}
 
-      {/* Server URL + Transport */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="url">
-            Server URL <span className="text-destructive">*</span>
-          </Label>
-          <Input
-            id="url"
-            type="url"
-            placeholder="https://my-mcp-server.com/mcp"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            aria-invalid={!!errors.url}
-          />
-          {errors.url && (
-            <p className="text-xs text-destructive">{errors.url}</p>
-          )}
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="transportType">
-            Transport Type <span className="text-destructive">*</span>
-          </Label>
-          <select
-            id="transportType"
-            value={transportType}
-            onChange={(e) =>
-              setTransportType(e.target.value as "sse" | "streamable-http")
-            }
-            className="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 md:text-sm dark:bg-input/30"
+      {/* Server Type Toggle */}
+      <div className="flex flex-col gap-2">
+        <Label>Server Type</Label>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setServerType("hosted")}
+            className={`flex-1 px-4 py-2.5 rounded-md text-sm font-medium border transition-colors ${
+              !isLocal
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-background text-muted-foreground border-border hover:text-foreground hover:border-foreground"
+            }`}
           >
-            {TRANSPORT_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+            Hosted Server
+          </button>
+          <button
+            type="button"
+            onClick={() => setServerType("local")}
+            className={`flex-1 px-4 py-2.5 rounded-md text-sm font-medium border transition-colors ${
+              isLocal
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-background text-muted-foreground border-border hover:text-foreground hover:border-foreground"
+            }`}
+          >
+            Local Command
+          </button>
         </div>
+        <p className="text-xs text-muted-foreground">
+          {isLocal
+            ? "A local MCP server that runs via a command (e.g. npx, uvx). Users run it on their own machine."
+            : "A remotely hosted MCP server accessible via URL."}
+        </p>
       </div>
+
+      {isLocal ? (
+        <>
+          {/* Command */}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="command">
+              Command <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="command"
+              placeholder="npx -y @modelcontextprotocol/server-github"
+              value={command}
+              onChange={(e) => setCommand(e.target.value)}
+              maxLength={500}
+              aria-invalid={!!errors.command}
+            />
+            {errors.command && (
+              <p className="text-xs text-destructive">{errors.command}</p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              The command users will run to start this MCP server locally.
+            </p>
+          </div>
+
+          {/* Required Env Vars */}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="requiredEnvVars">
+              Required Environment Variables{" "}
+              <span className="text-muted-foreground text-xs">(comma-separated names)</span>
+            </Label>
+            <Input
+              id="requiredEnvVars"
+              placeholder="GITHUB_PERSONAL_ACCESS_TOKEN, API_KEY"
+              value={requiredEnvVars}
+              onChange={(e) => setRequiredEnvVars(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Environment variable names the server requires (values are never stored).
+            </p>
+          </div>
+        </>
+      ) : (
+        <>
+          {/* Server URL + Transport */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="url">
+                Server URL <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="url"
+                type="url"
+                placeholder="https://my-mcp-server.com/mcp"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                aria-invalid={!!errors.url}
+              />
+              {errors.url && (
+                <p className="text-xs text-destructive">{errors.url}</p>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="transportType">
+                Transport Type <span className="text-destructive">*</span>
+              </Label>
+              <select
+                id="transportType"
+                value={transportType}
+                onChange={(e) =>
+                  setTransportType(e.target.value as "sse" | "streamable-http")
+                }
+                className="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 md:text-sm dark:bg-input/30"
+              >
+                {TRANSPORT_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Name */}
       <div className="flex flex-col gap-1.5">
@@ -294,6 +404,29 @@ export function SubmitForm() {
         {errors.longDescription && (
           <p className="text-xs text-destructive">{errors.longDescription}</p>
         )}
+      </div>
+
+      {/* Connection Guide */}
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-center justify-between">
+          <Label htmlFor="connectionGuide">
+            Connection Guide{" "}
+            <span className="text-muted-foreground text-xs">(optional)</span>
+          </Label>
+          <span className="text-xs text-muted-foreground">
+            {connectionGuide.length}/2000
+          </span>
+        </div>
+        <Textarea
+          id="connectionGuide"
+          placeholder={isLocal
+            ? "Instructions for setting up env vars, prerequisites, etc."
+            : "Instructions for connecting to this server (auth setup, etc.)"}
+          value={connectionGuide}
+          onChange={(e) => setConnectionGuide(e.target.value)}
+          maxLength={2000}
+          className="min-h-20"
+        />
       </div>
 
       {/* Categories */}

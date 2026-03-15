@@ -14,29 +14,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { url, transport, headers } = parsed.data;
-
-    // SSRF protection
-    try {
-      const parsedUrl = new URL(url);
-      if (
-        (parsedUrl.protocol !== "https:" && !isLocalhostUrl(url)) ||
-        (!isLocalhostUrl(url) && isPrivateIp(parsedUrl.hostname))
-      ) {
-        return NextResponse.json(
-          {
-            error:
-              "Connections to private/internal IP addresses are not allowed.",
-          },
-          { status: 403 }
-        );
-      }
-    } catch {
-      return NextResponse.json({ error: "Invalid URL" }, { status: 400 });
-    }
-
-    // Connect with 15-second timeout
-    const connectPromise = connectionManager.connect(url, transport, headers);
     const timeoutPromise = new Promise<never>((_, reject) =>
       setTimeout(
         () => reject(new Error("Connection timed out after 15 seconds.")),
@@ -44,10 +21,50 @@ export async function POST(req: NextRequest) {
       )
     );
 
-    const { sessionId, serverInfo, client } = await Promise.race([
-      connectPromise,
-      timeoutPromise,
-    ]);
+    let sessionId: string;
+    let serverInfo: { name: string; version: string; protocolVersion: string };
+    let client: Awaited<ReturnType<typeof connectionManager.connect>>["client"];
+
+    if (parsed.data.transport === "stdio") {
+      const { command, env } = parsed.data;
+
+      const result = await Promise.race([
+        connectionManager.connectStdio(command, env),
+        timeoutPromise,
+      ]);
+      sessionId = result.sessionId;
+      serverInfo = result.serverInfo;
+      client = result.client;
+    } else {
+      const { url, transport, headers } = parsed.data;
+
+      // SSRF protection
+      try {
+        const parsedUrl = new URL(url);
+        if (
+          (parsedUrl.protocol !== "https:" && !isLocalhostUrl(url)) ||
+          (!isLocalhostUrl(url) && isPrivateIp(parsedUrl.hostname))
+        ) {
+          return NextResponse.json(
+            {
+              error:
+                "Connections to private/internal IP addresses are not allowed.",
+            },
+            { status: 403 }
+          );
+        }
+      } catch {
+        return NextResponse.json({ error: "Invalid URL" }, { status: 400 });
+      }
+
+      const result = await Promise.race([
+        connectionManager.connect(url, transport, headers),
+        timeoutPromise,
+      ]);
+      sessionId = result.sessionId;
+      serverInfo = result.serverInfo;
+      client = result.client;
+    }
 
     // Enumerate capabilities
     const [toolsResult, resourcesResult, promptsResult] =
@@ -84,6 +101,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: `Server unreachable: ${message}` },
         { status: 502 }
+      );
+    }
+    if (message.includes("ENOENT")) {
+      return NextResponse.json(
+        { error: "Command not found. Make sure it's installed and in your PATH." },
+        { status: 400 }
+      );
+    }
+    if (message.includes("spawn")) {
+      return NextResponse.json(
+        { error: `Failed to spawn process: ${message}` },
+        { status: 500 }
       );
     }
     return NextResponse.json({ error: message }, { status: 500 });

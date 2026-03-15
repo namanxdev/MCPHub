@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    serverUrl = connection.url;
+    serverUrl = connection.url ?? `stdio://${connection.command ?? "unknown"}`;
     const { client } = connection;
     startTime = Date.now();
 

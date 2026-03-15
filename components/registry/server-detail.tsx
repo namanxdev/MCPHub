@@ -74,6 +74,10 @@ interface ServerData {
   tags: string[];
   status: string;
   transportType: string;
+  serverType?: string;
+  command?: string | null;
+  requiredEnvVars?: string[];
+  url?: string | null;
   toolsCount: number;
   resourcesCount: number;
   promptsCount: number;
@@ -172,13 +176,32 @@ export function ServerDetail({
   healthChecks,
 }: ServerDetailProps) {
   const [copied, setCopied] = useState(false);
-  const health = statusToHealth(server.status);
-  const { avgLatencyMs, uptimePct } = computeMetrics(healthChecks);
+  const isLocal = server.serverType === "local";
+  const health = isLocal ? ("unknown" as HealthStatus) : statusToHealth(server.status);
+  const { avgLatencyMs, uptimePct } = isLocal ? { avgLatencyMs: null, uptimePct: null } : computeMetrics(healthChecks);
 
-  async function copyUrl() {
-    await navigator.clipboard.writeText(server.id);
+  async function copyText() {
+    const text = isLocal && server.command ? server.command : server.id;
+    await navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  }
+
+  function getPlaygroundUrl() {
+    if (isLocal && server.command) {
+      const params = new URLSearchParams({
+        transport: "stdio",
+        command: server.command,
+      });
+      if (server.requiredEnvVars && server.requiredEnvVars.length > 0) {
+        params.set("requiredEnvVars", server.requiredEnvVars.join(","));
+      }
+      return `/playground?${params.toString()}`;
+    }
+    if (server.url) {
+      return `/playground/${server.slug}`;
+    }
+    return `/playground/${server.slug}`;
   }
 
   return (
@@ -223,19 +246,19 @@ export function ServerDetail({
 
           <div className="flex items-center gap-2 shrink-0">
             <Button asChild>
-              <Link href={`/playground/${server.slug}`}>
+              <Link href={getPlaygroundUrl()}>
                 <PlayIcon className="size-4" />
                 Test in Playground
               </Link>
             </Button>
-            <Button variant="outline" onClick={copyUrl}>
+            <Button variant="outline" onClick={copyText}>
               {copied ? (
                 <>
                   <CheckIcon className="size-4" /> Copied
                 </>
               ) : (
                 <>
-                  <ClipboardCopyIcon className="size-4" /> Copy URL
+                  <ClipboardCopyIcon className="size-4" /> {isLocal ? "Copy Command" : "Copy URL"}
                 </>
               )}
             </Button>
@@ -269,8 +292,40 @@ export function ServerDetail({
         </p>
       </div>
 
-      {/* Health overview */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {/* Command template for local servers */}
+      {isLocal && server.command && (
+        <Card className="gap-3 py-4 border-blue-500/30 bg-blue-50/5">
+          <CardHeader className="px-4 pb-0">
+            <CardTitle className="text-sm">Command</CardTitle>
+          </CardHeader>
+          <CardContent className="px-4">
+            <pre className="text-sm font-mono bg-muted rounded-md p-3 whitespace-pre-wrap break-all text-foreground/80">
+              {server.command}
+            </pre>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Required env vars for local servers */}
+      {isLocal && server.requiredEnvVars && server.requiredEnvVars.length > 0 && (
+        <Card className="gap-3 py-4">
+          <CardHeader className="px-4 pb-0">
+            <CardTitle className="text-sm">Required Environment Variables</CardTitle>
+          </CardHeader>
+          <CardContent className="px-4">
+            <div className="flex flex-wrap gap-2">
+              {server.requiredEnvVars.map((v) => (
+                <Badge key={v} variant="secondary" className="font-mono text-xs">
+                  {v}
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Health overview (hidden for local servers) */}
+      {!isLocal && <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card className="py-4 gap-2">
           <CardContent className="px-4">
             <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
@@ -307,10 +362,10 @@ export function ServerDetail({
             <p className="text-sm font-semibold">{healthChecks.length}</p>
           </CardContent>
         </Card>
-      </div>
+      </div>}
 
       {/* Health history chart */}
-      {healthChecks.length > 0 && (
+      {!isLocal && healthChecks.length > 0 && (
         <Card className="gap-3 py-4">
           <CardHeader className="px-4 pb-0">
             <CardTitle className="text-sm">Health History</CardTitle>

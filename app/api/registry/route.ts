@@ -131,21 +131,28 @@ export async function POST(request: NextRequest) {
     repoUrl,
     transportType,
     connectionGuide,
+    serverType,
+    command,
+    requiredEnvVars,
   } = parsed.data;
 
-  try {
-    // Check for duplicate URL
-    const existing = await db
-      .select({ id: servers.id })
-      .from(servers)
-      .where(eq(servers.url, url))
-      .limit(1);
+  const isLocal = serverType === "local";
 
-    if (existing.length > 0) {
-      return NextResponse.json(
-        { error: "Server URL already registered" },
-        { status: 409 }
-      );
+  try {
+    // Check for duplicate URL (only for hosted servers with a URL)
+    if (url) {
+      const existing = await db
+        .select({ id: servers.id })
+        .from(servers)
+        .where(eq(servers.url, url))
+        .limit(1);
+
+      if (existing.length > 0) {
+        return NextResponse.json(
+          { error: "Server URL already registered" },
+          { status: 409 }
+        );
+      }
     }
 
     // Generate unique slug
@@ -165,6 +172,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Try to connect to the server via MCP with 15s timeout
+    // Skip live verification for local/stdio servers
     let status = "pending";
     const toolsList: Array<{
       name: string;
@@ -184,60 +192,62 @@ export async function POST(request: NextRequest) {
     }> = [];
     let connectionLatencyMs: number | undefined;
 
-    try {
-      const { Client } = await import(
-        "@modelcontextprotocol/sdk/client/index.js"
-      );
-      const { SSEClientTransport } = await import(
-        "@modelcontextprotocol/sdk/client/sse.js"
-      );
-      const { StreamableHTTPClientTransport } = await import(
-        "@modelcontextprotocol/sdk/client/streamableHttp.js"
-      );
+    if (!isLocal && url) {
+      try {
+        const { Client } = await import(
+          "@modelcontextprotocol/sdk/client/index.js"
+        );
+        const { SSEClientTransport } = await import(
+          "@modelcontextprotocol/sdk/client/sse.js"
+        );
+        const { StreamableHTTPClientTransport } = await import(
+          "@modelcontextprotocol/sdk/client/streamableHttp.js"
+        );
 
-      const startTime = Date.now();
-      const parsedUrl = new URL(url);
-      const transport =
-        transportType === "sse"
-          ? new SSEClientTransport(parsedUrl)
-          : new StreamableHTTPClientTransport(parsedUrl);
+        const startTime = Date.now();
+        const parsedUrl = new URL(url);
+        const transport =
+          transportType === "sse"
+            ? new SSEClientTransport(parsedUrl)
+            : new StreamableHTTPClientTransport(parsedUrl);
 
-      const client = new Client(
-        { name: "mcphub-registry", version: "1.0.0" },
-        { capabilities: {} }
-      );
+        const client = new Client(
+          { name: "mcphub-registry", version: "1.0.0" },
+          { capabilities: {} }
+        );
 
-      await Promise.race([
-        client.connect(transport),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("Connection timeout")), 15000)
-        ),
-      ]);
-
-      connectionLatencyMs = Date.now() - startTime;
-
-      const [toolsResult, resourcesResult, promptsResult] =
-        await Promise.allSettled([
-          client.listTools(),
-          client.listResources(),
-          client.listPrompts(),
+        await Promise.race([
+          client.connect(transport),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("Connection timeout")), 15000)
+          ),
         ]);
 
-      if (toolsResult.status === "fulfilled") {
-        toolsList.push(...toolsResult.value.tools);
-      }
-      if (resourcesResult.status === "fulfilled") {
-        resourcesList.push(...resourcesResult.value.resources);
-      }
-      if (promptsResult.status === "fulfilled") {
-        promptsList.push(...promptsResult.value.prompts);
-      }
+        connectionLatencyMs = Date.now() - startTime;
 
-      await client.close();
-      status = "active";
-    } catch (e) {
-      console.error("Server validation failed during submission:", e);
-      status = "pending";
+        const [toolsResult, resourcesResult, promptsResult] =
+          await Promise.allSettled([
+            client.listTools(),
+            client.listResources(),
+            client.listPrompts(),
+          ]);
+
+        if (toolsResult.status === "fulfilled") {
+          toolsList.push(...toolsResult.value.tools);
+        }
+        if (resourcesResult.status === "fulfilled") {
+          resourcesList.push(...resourcesResult.value.resources);
+        }
+        if (promptsResult.status === "fulfilled") {
+          promptsList.push(...promptsResult.value.prompts);
+        }
+
+        await client.close();
+        status = "active";
+      } catch (e) {
+        console.error("Server validation failed during submission:", e);
+        status = "pending";
+      }
     }
 
     // Create server record
@@ -246,8 +256,11 @@ export async function POST(request: NextRequest) {
       .values({
         name,
         slug,
-        url,
+        url: url ?? null,
         transportType,
+        serverType,
+        command: command ?? null,
+        requiredEnvVars: requiredEnvVars ?? [],
         shortDescription,
         longDescription: longDescription ?? null,
         authorName,
@@ -300,15 +313,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Store initial health check
-    await db.insert(serverHealthChecks).values({
-      serverId: server.id,
-      isReachable: status === "active",
-      latencyMs: connectionLatencyMs ?? null,
-      toolsCount: toolsList.length,
-      errorMessage:
-        status === "pending" ? "Initial connection failed" : undefined,
-    });
+    // Store initial health check (only for hosted servers)
+    if (!isLocal) {
+      await db.insert(serverHealthChecks).values({
+        serverId: server.id,
+        isReachable: status === "active",
+        latencyMs: connectionLatencyMs ?? null,
+        toolsCount: toolsList.length,
+        errorMessage:
+          status === "pending" ? "Initial connection failed" : undefined,
+      });
+    }
 
     return NextResponse.json(
       {
