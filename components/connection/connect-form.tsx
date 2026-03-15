@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { PlusIcon, Trash2Icon, ChevronDownIcon, ChevronUpIcon, Loader2Icon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,8 +21,11 @@ interface HeaderPair {
 }
 
 export function ConnectForm() {
-  const [url, setUrl] = useState("");
-  const [transport, setTransport] = useState<"sse" | "streamable-http">("sse");
+  const searchParams = useSearchParams();
+  const [url, setUrl] = useState(searchParams.get("url") ?? "");
+  const [transport, setTransport] = useState<"sse" | "streamable-http">(
+    (searchParams.get("transport") as "sse" | "streamable-http") ?? "sse"
+  );
   const [headers, setHeaders] = useState<HeaderPair[]>([]);
   const [showHeaders, setShowHeaders] = useState(false);
 

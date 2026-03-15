@@ -23,4 +23,5 @@ export const serverSubmissionSchema = z.object({
   authorUrl: z.string().url().optional(),
   repoUrl: z.string().url().optional(),
   transportType: z.enum(["sse", "streamable-http"]),
+  connectionGuide: z.string().max(2000).optional(),
 });

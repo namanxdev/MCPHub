@@ -130,6 +130,7 @@ export async function POST(request: NextRequest) {
     authorUrl,
     repoUrl,
     transportType,
+    connectionGuide,
   } = parsed.data;
 
   try {
@@ -252,6 +253,7 @@ export async function POST(request: NextRequest) {
         authorName,
         authorUrl: authorUrl ?? null,
         repoUrl: repoUrl ?? null,
+        connectionGuide: connectionGuide ?? null,
         categories,
         tags: tags ?? [],
         status,

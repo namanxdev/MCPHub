@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ConnectForm } from "@/components/connection/connect-form";
 import { ConnectionStatus } from "@/components/connection/connection-status";
@@ -63,7 +64,9 @@ export function PlaygroundLayout() {
                 <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-foreground/40 mt-2">LINK TO AN EXTERNAL MCP SERVER</p>
               </div>
               <div className="relative z-10">
-                <ConnectForm />
+                <Suspense fallback={null}>
+                  <ConnectForm />
+                </Suspense>
               </div>
             </div>
             <ConnectionHistory />

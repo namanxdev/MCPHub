@@ -15,6 +15,7 @@ interface ServerSummary {
   transportType: string;
   shortDescription: string;
   authorName: string;
+  connectionGuide: string | null;
 }
 
 interface PlaygroundServerPageProps {
@@ -114,6 +115,14 @@ export default function PlaygroundServerPage({
             <p className="text-xs text-muted-foreground mb-0.5">Server URL</p>
             <p className="font-mono text-sm break-all">{server.url}</p>
           </div>
+          {server.connectionGuide && (
+            <div className="rounded-md border border-amber-500/30 bg-amber-50/5 px-3 py-2">
+              <p className="text-xs text-muted-foreground mb-1.5">How to Connect</p>
+              <pre className="font-mono text-xs whitespace-pre-wrap break-all text-foreground/80">
+                {server.connectionGuide}
+              </pre>
+            </div>
+          )}
           <div className="flex gap-3">
             <Button onClick={handleConnect} className="flex-1">
               <ExternalLinkIcon className="size-4" />

@@ -69,6 +69,7 @@ interface ServerData {
   repoUrl: string | null;
   shortDescription: string;
   longDescription: string | null;
+  connectionGuide: string | null;
   categories: string[];
   tags: string[];
   status: string;
@@ -329,6 +330,20 @@ export function ServerDetail({
           <CardContent className="px-4">
             <pre className="text-sm text-muted-foreground whitespace-pre-wrap font-sans">
               {server.longDescription}
+            </pre>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Connection guide */}
+      {server.connectionGuide && (
+        <Card className="gap-3 py-4 border-amber-500/30 bg-amber-50/5">
+          <CardHeader className="px-4 pb-0">
+            <CardTitle className="text-sm">How to Connect</CardTitle>
+          </CardHeader>
+          <CardContent className="px-4">
+            <pre className="text-xs font-mono bg-muted rounded-md p-3 whitespace-pre-wrap break-all text-foreground/80">
+              {server.connectionGuide}
             </pre>
           </CardContent>
         </Card>

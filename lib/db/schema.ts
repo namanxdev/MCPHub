@@ -24,6 +24,7 @@ export const servers = pgTable(
     authorName: text("author_name").notNull(),
     authorUrl: text("author_url"),
     repoUrl: text("repo_url"),
+    connectionGuide: text("connection_guide"),
     categories: text("categories").array().notNull().default([]),
     tags: text("tags").array().notNull().default([]),
     status: text("status").notNull().default("active"),
