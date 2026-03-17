@@ -2,11 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectionManager } from "@/lib/mcp/connection-manager";
 import { toolCallRequestSchema } from "@/lib/validators";
 import { recordToolCall } from "@/lib/mcp/health-collector";
+import { toolCallLimiter, getClientIp, checkRateLimit } from "@/lib/rate-limit";
+import { sanitizeErrorMessage } from "@/lib/utils/sanitize-error";
 
 export async function POST(req: NextRequest) {
+  const rateLimitResponse = checkRateLimit(toolCallLimiter, getClientIp(req));
+  if (rateLimitResponse) return rateLimitResponse;
+
   let serverUrl: string | undefined;
   let toolName: string | undefined;
   let startTime: number | undefined;
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
   try {
     const body = await req.json();
@@ -35,14 +41,15 @@ export async function POST(req: NextRequest) {
 
     // Execute with 60s timeout
     const callPromise = client.callTool({ name: toolName, arguments: args });
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeoutId = setTimeout(
         () => reject(new Error("Tool execution timed out after 60 seconds")),
         60000
-      )
-    );
+      );
+    });
 
     const result = await Promise.race([callPromise, timeoutPromise]);
+    clearTimeout(timeoutId);
     const latencyMs = Date.now() - startTime;
     const responseBytes = new TextEncoder().encode(JSON.stringify(result)).length;
 
@@ -64,6 +71,7 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error: unknown) {
+    clearTimeout(timeoutId);
     const message = error instanceof Error ? error.message : "Unknown error";
 
     // Record the failed call if we know the server and tool
@@ -85,6 +93,6 @@ export async function POST(req: NextRequest) {
     if (message.includes("Session not found")) {
       return NextResponse.json({ error: message }, { status: 404 });
     }
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: sanitizeErrorMessage(error) }, { status: 500 });
   }
 }

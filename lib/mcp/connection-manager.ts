@@ -5,6 +5,47 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { LATEST_PROTOCOL_VERSION } from "@modelcontextprotocol/sdk/types.js";
 import { ProtocolLogger } from "./protocol-logger";
 
+const ALLOWED_COMMANDS = new Set([
+  "node",
+  "npx",
+  "python",
+  "python3",
+  "pip",
+  "pipx",
+  "uvx",
+  "uv",
+  "deno",
+  "bun",
+  "bunx",
+  "tsx",
+  "ts-node",
+  "docker",
+  "go",
+  "cargo",
+]);
+
+const SHELL_METACHARACTERS = /[;&|`$(){}<>\n]/;
+
+const MAX_CONNECTIONS = 100;
+
+export function validateStdioCommand(command: string): void {
+  if (SHELL_METACHARACTERS.test(command)) {
+    throw new Error(
+      `Invalid stdio command: shell metacharacters are not allowed`
+    );
+  }
+
+  const firstPart = command.trim().split(/\s+/)[0];
+  // Extract the base name from a path (e.g. /usr/bin/node -> node, node.exe -> node)
+  const baseName = firstPart.replace(/^.*[\\/]/, "").replace(/\.exe$/i, "");
+
+  if (!ALLOWED_COMMANDS.has(baseName)) {
+    throw new Error(
+      `Invalid stdio command: "${baseName}" is not in the list of allowed commands`
+    );
+  }
+}
+
 interface StoredConnection {
   client: Client;
   transport: SSEClientTransport | StreamableHTTPClientTransport | StdioClientTransport;
@@ -38,6 +79,10 @@ class ConnectionManager {
     serverInfo: StoredConnection["serverInfo"];
     client: Client;
   }> {
+    if (this.connections.size >= MAX_CONNECTIONS) {
+      throw new Error("Maximum number of concurrent connections reached. Please disconnect an existing session first.");
+    }
+
     const sessionId = crypto.randomUUID();
 
     const parsedUrl = new URL(url);
@@ -123,6 +168,12 @@ class ConnectionManager {
     serverInfo: StoredConnection["serverInfo"];
     client: Client;
   }> {
+    validateStdioCommand(command);
+
+    if (this.connections.size >= MAX_CONNECTIONS) {
+      throw new Error("Maximum number of concurrent connections reached. Please disconnect an existing session first.");
+    }
+
     const sessionId = crypto.randomUUID();
 
     const parts = command.split(/\s+/);

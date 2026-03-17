@@ -10,24 +10,7 @@ import {
 import { serverSubmissionSchema } from "@/lib/validators";
 import { generateSlug } from "@/lib/utils/index";
 import { eq, and, or, ilike, desc, asc, sql } from "drizzle-orm";
-
-// ─── Simple in-memory rate limiter (5 requests per 10 minutes per IP) ─────────
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-
-function isRateLimited(ip: string): boolean {
-  const now = Date.now();
-  const windowMs = 10 * 60 * 1000; // 10 minutes
-  const limit = 5;
-
-  const entry = rateLimitMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + windowMs });
-    return false;
-  }
-  if (entry.count >= limit) return true;
-  entry.count += 1;
-  return false;
-}
+import { registrySubmitLimiter, getClientIp, checkRateLimit } from "@/lib/rate-limit";
 
 // ─── GET /api/registry ────────────────────────────────────────────────────────
 export async function GET(request: NextRequest) {
@@ -42,12 +25,13 @@ export async function GET(request: NextRequest) {
   const offset = (page - 1) * limit;
 
   try {
+    const escapedQ = q.replace(/%/g, '\\%').replace(/_/g, '\\_');
     const whereClause = and(
       eq(servers.status, status),
       q
         ? or(
-            ilike(servers.name, `%${q}%`),
-            ilike(servers.shortDescription, `%${q}%`)
+            ilike(servers.name, `%${escapedQ}%`),
+            ilike(servers.shortDescription, `%${escapedQ}%`)
           )
         : undefined,
       category
@@ -92,17 +76,8 @@ export async function GET(request: NextRequest) {
 // ─── POST /api/registry ───────────────────────────────────────────────────────
 export async function POST(request: NextRequest) {
   // Rate limiting
-  const ip =
-    request.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
-    request.headers.get("x-real-ip") ||
-    "unknown";
-
-  if (isRateLimited(ip)) {
-    return NextResponse.json(
-      { error: "Too many submissions. Please try again later." },
-      { status: 429 }
-    );
-  }
+  const rateLimitResponse = checkRateLimit(registrySubmitLimiter, getClientIp(request));
+  if (rateLimitResponse) return rateLimitResponse;
 
   let body: unknown;
   try {

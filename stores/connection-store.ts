@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 export interface ServerInfo {
   name: string;
@@ -91,49 +92,60 @@ interface ConnectionStore {
   setLastConnectionParams: (params: LastConnectionParams | null) => void;
 }
 
-export const useConnectionStore = create<ConnectionStore>((set) => ({
-  session: null,
-  status: "disconnected",
-  error: null,
-  history: [],
-
-  reconnectAttempts: 0,
-  maxReconnectAttempts: 5,
-  isReconnecting: false,
-  lastConnectionParams: null,
-
-  setConnecting: () => set({ status: "connecting", error: null }),
-  setConnected: (session) =>
-    set({
-      session,
-      status: "connected",
+export const useConnectionStore = create<ConnectionStore>()(
+  persist(
+    (set) => ({
+      session: null,
+      status: "disconnected",
       error: null,
-      reconnectAttempts: 0,
-      isReconnecting: false,
-      lastConnectionParams:
-        session.transport === "stdio"
-          ? { command: session.command!, transport: "stdio" }
-          : { url: session.url!, transport: session.transport },
-    }),
-  setError: (error) => set({ status: "error", error }),
-  setDisconnected: () =>
-    set({ session: null, status: "disconnected", error: null }),
-  addToHistory: (entry) =>
-    set((state) => ({
-      history: [
-        entry,
-        ...state.history.filter((h) =>
-          entry.transport === "stdio"
-            ? h.command !== entry.command
-            : h.url !== entry.url
-        ),
-      ].slice(0, 10),
-    })),
-  clearHistory: () => set({ history: [] }),
+      history: [],
 
-  setReconnecting: (v) => set({ isReconnecting: v }),
-  incrementReconnectAttempts: () =>
-    set((state) => ({ reconnectAttempts: state.reconnectAttempts + 1 })),
-  resetReconnect: () => set({ reconnectAttempts: 0, isReconnecting: false }),
-  setLastConnectionParams: (params) => set({ lastConnectionParams: params }),
-}));
+      reconnectAttempts: 0,
+      maxReconnectAttempts: 5,
+      isReconnecting: false,
+      lastConnectionParams: null,
+
+      setConnecting: () => set({ status: "connecting", error: null }),
+      setConnected: (session) =>
+        set({
+          session,
+          status: "connected",
+          error: null,
+          reconnectAttempts: 0,
+          isReconnecting: false,
+          lastConnectionParams:
+            session.transport === "stdio"
+              ? { command: session.command!, transport: "stdio" }
+              : { url: session.url!, transport: session.transport },
+        }),
+      setError: (error) => set({ status: "error", error }),
+      setDisconnected: () =>
+        set({ session: null, status: "disconnected", error: null }),
+      addToHistory: (entry) =>
+        set((state) => ({
+          history: [
+            entry,
+            ...state.history.filter((h) =>
+              entry.transport === "stdio"
+                ? h.command !== entry.command
+                : h.url !== entry.url
+            ),
+          ].slice(0, 10),
+        })),
+      clearHistory: () => set({ history: [] }),
+
+      setReconnecting: (v) => set({ isReconnecting: v }),
+      incrementReconnectAttempts: () =>
+        set((state) => ({ reconnectAttempts: state.reconnectAttempts + 1 })),
+      resetReconnect: () =>
+        set({ reconnectAttempts: 0, isReconnecting: false }),
+      setLastConnectionParams: (params) =>
+        set({ lastConnectionParams: params }),
+    }),
+    {
+      name: "mcphub-connection-history",
+      partialize: (state) => ({ history: state.history }),
+      version: 1,
+    }
+  )
+);

@@ -1,9 +1,17 @@
+import dns from "node:dns";
 import { NextRequest, NextResponse } from "next/server";
 import { connectionManager } from "@/lib/mcp/connection-manager";
 import { connectRequestSchema } from "@/lib/validators";
 import { isPrivateIp, isLocalhostUrl } from "@/lib/utils/index";
+import { connectLimiter, getClientIp, checkRateLimit } from "@/lib/rate-limit";
+import { sanitizeErrorMessage } from "@/lib/utils/sanitize-error";
 
 export async function POST(req: NextRequest) {
+  const rateLimitResponse = checkRateLimit(connectLimiter, getClientIp(req));
+  if (rateLimitResponse) return rateLimitResponse;
+
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
   try {
     const body = await req.json();
     const parsed = connectRequestSchema.safeParse(body);
@@ -14,12 +22,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeoutId = setTimeout(
         () => reject(new Error("Connection timed out after 15 seconds.")),
         15000
-      )
-    );
+      );
+    });
 
     let sessionId: string;
     let serverInfo: { name: string; version: string; protocolVersion: string };
@@ -53,7 +61,30 @@ export async function POST(req: NextRequest) {
             { status: 403 }
           );
         }
-      } catch {
+
+        // DNS rebinding protection: resolve the hostname and verify the
+        // resulting IP is also not private. Skip for localhost URLs which
+        // are intentionally allowed for local development.
+        if (!isLocalhostUrl(url)) {
+          const { address } = await dns.promises.lookup(parsedUrl.hostname);
+          if (isPrivateIp(address)) {
+            return NextResponse.json(
+              {
+                error:
+                  "Connections to private/internal IP addresses are not allowed.",
+              },
+              { status: 403 }
+            );
+          }
+        }
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (msg.includes("ENOTFOUND") || msg.includes("EAI_")) {
+          return NextResponse.json(
+            { error: "Could not resolve hostname." },
+            { status: 400 }
+          );
+        }
         return NextResponse.json({ error: "Invalid URL" }, { status: 400 });
       }
 
@@ -65,6 +96,7 @@ export async function POST(req: NextRequest) {
       serverInfo = result.serverInfo;
       client = result.client;
     }
+    clearTimeout(timeoutId);
 
     // Enumerate capabilities
     const [toolsResult, resourcesResult, promptsResult] =
@@ -89,6 +121,7 @@ export async function POST(req: NextRequest) {
       capabilities: { tools, resources, prompts },
     });
   } catch (error: unknown) {
+    clearTimeout(timeoutId);
     const message =
       error instanceof Error ? error.message : "Unknown error";
     if (message.includes("timed out")) {
@@ -115,6 +148,6 @@ export async function POST(req: NextRequest) {
         { status: 500 }
       );
     }
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: sanitizeErrorMessage(error) }, { status: 500 });
   }
 }

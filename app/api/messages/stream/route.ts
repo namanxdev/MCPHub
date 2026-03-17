@@ -1,7 +1,11 @@
 import { NextRequest } from "next/server";
 import { connectionManager } from "@/lib/mcp/connection-manager";
+import { streamLimiter, getClientIp, checkRateLimit } from "@/lib/rate-limit";
 
 export async function GET(request: NextRequest) {
+  const rateLimitResponse = checkRateLimit(streamLimiter, getClientIp(request));
+  if (rateLimitResponse) return rateLimitResponse;
+
   const sessionId = request.nextUrl.searchParams.get("sessionId");
 
   if (!sessionId) {

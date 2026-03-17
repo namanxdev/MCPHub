@@ -2,8 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { serverMetrics, serverHealthChecks } from "@/lib/db/schema";
 import { eq, sql, desc } from "drizzle-orm";
+import { healthLimiter, getClientIp, checkRateLimit } from "@/lib/rate-limit";
 
 export async function GET(request: NextRequest) {
+  const rateLimitResponse = checkRateLimit(healthLimiter, getClientIp(request));
+  if (rateLimitResponse) return rateLimitResponse;
+
   const { searchParams } = request.nextUrl;
   const serverUrl = searchParams.get("serverUrl");
   const serverId = searchParams.get("serverId");

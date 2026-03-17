@@ -12,6 +12,8 @@ export interface ProtocolMessage {
   isNotification?: boolean;
 }
 
+const MAX_MESSAGES = 1000;
+
 export class ProtocolLogger {
   private messages: ProtocolMessage[] = [];
   private requestTimestamps: Map<number | string, number> = new Map();
@@ -56,6 +58,18 @@ export class ProtocolLogger {
     }
 
     this.messages.push(entry);
+    // Ring buffer: drop oldest messages when limit exceeded
+    if (this.messages.length > MAX_MESSAGES) {
+      this.messages = this.messages.slice(-MAX_MESSAGES);
+    }
+
+    if (this.requestTimestamps.size > 500) {
+      const cutoff = Date.now() - 5 * 60 * 1000;
+      for (const [key, ts] of this.requestTimestamps) {
+        if (ts < cutoff) this.requestTimestamps.delete(key);
+      }
+    }
+
     this.listeners.forEach((fn) => fn(entry));
   }
 
