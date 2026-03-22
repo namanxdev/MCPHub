@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
@@ -162,9 +163,12 @@ export function AnimatedNav() {
           <div className="flex-1">
             {/* Wordmark */}
             <Magnetic strength={0.2}>
-              <Link href="/" className="font-bold text-xl tracking-tighter uppercase text-foreground inline-flex relative overflow-hidden group">
-                <span className="group-hover:-translate-y-full transition-transform duration-300">MCPHub</span>
-                <span className="absolute top-full left-0 group-hover:-translate-y-full transition-transform duration-300">MCPHub</span>
+              <Link href="/" className="flex items-center gap-3 group">
+                <Image src="/logo.png" alt="MCPHub Logo" width={32} height={32} className="object-contain" />
+                <span className="font-bold text-xl tracking-tighter uppercase text-foreground inline-flex relative overflow-hidden">
+                  <span className="group-hover:-translate-y-full transition-transform duration-300">MCPHub</span>
+                  <span className="absolute top-full left-0 group-hover:-translate-y-full transition-transform duration-300">MCPHub</span>
+                </span>
               </Link>
             </Magnetic>
           </div>
