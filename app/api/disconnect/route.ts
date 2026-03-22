@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectionManager } from "@/lib/mcp/connection-manager";
 import { z } from "zod";
+import { auth } from "@/lib/auth";
 
 const schema = z.object({ sessionId: z.string().uuid() });
 
@@ -11,6 +12,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid sessionId" }, { status: 400 });
   }
 
-  await connectionManager.disconnect(parsed.data.sessionId);
+  const session = await auth();
+  const userId = session?.user?.id;
+
+  await connectionManager.disconnect(parsed.data.sessionId, userId);
   return NextResponse.json({ success: true });
 }

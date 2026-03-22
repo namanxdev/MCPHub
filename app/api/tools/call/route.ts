@@ -4,10 +4,14 @@ import { toolCallRequestSchema } from "@/lib/validators";
 import { recordToolCall } from "@/lib/mcp/health-collector";
 import { toolCallLimiter, getClientIp, checkRateLimit } from "@/lib/rate-limit";
 import { sanitizeErrorMessage } from "@/lib/utils/sanitize-error";
+import { auth } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
   const rateLimitResponse = checkRateLimit(toolCallLimiter, getClientIp(req));
   if (rateLimitResponse) return rateLimitResponse;
+
+  const session = await auth();
+  const userId = session?.user?.id;
 
   let serverUrl: string | undefined;
   let toolName: string | undefined;
@@ -27,7 +31,9 @@ export async function POST(req: NextRequest) {
     const { sessionId, toolName: parsedToolName, arguments: args } = parsed.data;
     toolName = parsedToolName;
 
-    const connection = connectionManager.getConnection(sessionId);
+    const connection = userId
+      ? connectionManager.getConnectionForUser(sessionId, userId)
+      : connectionManager.getConnection(sessionId);
     if (!connection) {
       return NextResponse.json(
         { error: "Session not found or expired" },

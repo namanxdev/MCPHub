@@ -57,6 +57,7 @@ interface StoredConnection {
   url?: string;
   command?: string;
   transport_type: "sse" | "streamable-http" | "stdio";
+  userId?: string;
   connectedAt: Date;
   lastActivity: Date;
   logger: ProtocolLogger;
@@ -73,7 +74,8 @@ class ConnectionManager {
   async connect(
     url: string,
     transportType: "sse" | "streamable-http",
-    headers?: Record<string, string>
+    headers?: Record<string, string>,
+    userId?: string
   ): Promise<{
     sessionId: string;
     serverInfo: StoredConnection["serverInfo"];
@@ -152,6 +154,7 @@ class ConnectionManager {
       serverInfo,
       url,
       transport_type: transportType,
+      userId,
       connectedAt: new Date(),
       lastActivity: new Date(),
       logger,
@@ -162,7 +165,8 @@ class ConnectionManager {
 
   async connectStdio(
     command: string,
-    env?: Record<string, string>
+    env?: Record<string, string>,
+    userId?: string
   ): Promise<{
     sessionId: string;
     serverInfo: StoredConnection["serverInfo"];
@@ -224,6 +228,7 @@ class ConnectionManager {
       serverInfo,
       command,
       transport_type: "stdio",
+      userId,
       connectedAt: new Date(),
       lastActivity: new Date(),
       logger,
@@ -232,9 +237,10 @@ class ConnectionManager {
     return { sessionId, serverInfo, client };
   }
 
-  async disconnect(sessionId: string): Promise<void> {
+  async disconnect(sessionId: string, userId?: string): Promise<void> {
     const conn = this.connections.get(sessionId);
     if (!conn) return;
+    if (userId && conn.userId && conn.userId !== userId) return;
     try {
       await conn.client.close();
     } catch {
@@ -251,6 +257,15 @@ class ConnectionManager {
 
   getConnection(sessionId: string): StoredConnection | undefined {
     return this.connections.get(sessionId);
+  }
+
+  /** Get a connection only if it belongs to the given user. */
+  getConnectionForUser(sessionId: string, userId: string): StoredConnection | undefined {
+    const conn = this.connections.get(sessionId);
+    if (!conn) return undefined;
+    if (conn.userId && conn.userId !== userId) return undefined;
+    conn.lastActivity = new Date();
+    return conn;
   }
 
   getLogger(sessionId: string): ProtocolLogger | undefined {

@@ -5,10 +5,14 @@ import { connectRequestSchema } from "@/lib/validators";
 import { isPrivateIp, isLocalhostUrl } from "@/lib/utils/index";
 import { connectLimiter, getClientIp, checkRateLimit } from "@/lib/rate-limit";
 import { sanitizeErrorMessage } from "@/lib/utils/sanitize-error";
+import { auth } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
   const rateLimitResponse = checkRateLimit(connectLimiter, getClientIp(req));
   if (rateLimitResponse) return rateLimitResponse;
+
+  const session = await auth();
+  const userId = session?.user?.id;
 
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
@@ -37,7 +41,7 @@ export async function POST(req: NextRequest) {
       const { command, env } = parsed.data;
 
       const result = await Promise.race([
-        connectionManager.connectStdio(command, env),
+        connectionManager.connectStdio(command, env, userId),
         timeoutPromise,
       ]);
       sessionId = result.sessionId;
@@ -89,7 +93,7 @@ export async function POST(req: NextRequest) {
       }
 
       const result = await Promise.race([
-        connectionManager.connect(url, transport, headers),
+        connectionManager.connect(url, transport, headers, userId),
         timeoutPromise,
       ]);
       sessionId = result.sessionId;

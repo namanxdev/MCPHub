@@ -8,6 +8,7 @@ import * as HoverCard from "@radix-ui/react-hover-card";
 import { cn } from "@/lib/utils";
 import { Magnetic } from "@/components/effects/magnetic";
 import { EASE_SMOOTH, EASE_CINEMATIC } from "@/lib/motion";
+import { UserMenu } from "@/components/auth/user-menu";
 import { ArrowRight } from "lucide-react";
 
 const navLinks = [
@@ -184,7 +185,11 @@ export function AnimatedNav() {
               <span className="absolute inset-0 bg-foreground translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out z-0" />
               <span className="relative z-10">Get started</span>
             </Link>
-            
+
+            <div className="hidden md:block">
+              <UserMenu />
+            </div>
+
             {/* Hamburger — mobile only */}
             <button
               className="md:hidden flex flex-col gap-1.5 p-2 z-50 hover:opacity-70 transition-opacity"

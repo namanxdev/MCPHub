@@ -1,47 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
 
-export function middleware(request: NextRequest) {
-  // Only apply CORS to API routes
-  if (!request.nextUrl.pathname.startsWith("/api/")) {
-    return NextResponse.next();
-  }
+// Routes that require authentication
+const PROTECTED_ROUTES = [
+  { path: "/api/connect", methods: ["POST"] },
+  { path: "/api/disconnect", methods: ["POST"] },
+  { path: "/api/tools/call", methods: ["POST"] },
+  { path: "/api/registry", methods: ["POST"] },
+];
 
-  const origin = request.headers.get("origin") ?? "";
-  const allowedOrigins = getAllowedOrigins();
-
-  // Handle preflight requests
-  if (request.method === "OPTIONS") {
-    return new NextResponse(null, {
-      status: 204,
-      headers: getCorsHeaders(origin, allowedOrigins),
-    });
-  }
-
-  const response = NextResponse.next();
-  const corsHeaders = getCorsHeaders(origin, allowedOrigins);
-  for (const [key, value] of Object.entries(corsHeaders)) {
-    response.headers.set(key, value);
-  }
-  return response;
+function isAuthRoute(pathname: string): boolean {
+  return pathname.startsWith("/api/auth/");
 }
 
-function getAllowedOrigins(): string[] {
-  // In production, restrict to own domain
-  if (process.env.NEXT_PUBLIC_APP_URL) {
-    return [process.env.NEXT_PUBLIC_APP_URL];
-  }
-  // In development, allow localhost on common ports
-  if (process.env.NODE_ENV === "development") {
-    return [
-      "http://localhost:3000",
-      "http://localhost:3001",
-      "http://127.0.0.1:3000",
-    ];
-  }
-  return [];
+function isProtectedRoute(pathname: string, method: string): boolean {
+  return PROTECTED_ROUTES.some(
+    (route) => pathname === route.path && route.methods.includes(method)
+  );
 }
 
-function getCorsHeaders(origin: string, allowedOrigins: string[]): Record<string, string> {
+function addCorsHeaders(
+  response: NextResponse,
+  origin: string,
+  allowedOrigins: string[]
+): NextResponse {
   const headers: Record<string, string> = {
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
@@ -52,8 +34,63 @@ function getCorsHeaders(origin: string, allowedOrigins: string[]): Record<string
     headers["Access-Control-Allow-Origin"] = origin || "*";
   }
 
-  return headers;
+  for (const [key, value] of Object.entries(headers)) {
+    response.headers.set(key, value);
+  }
+  return response;
 }
+
+function getAllowedOrigins(): string[] {
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return [process.env.NEXT_PUBLIC_APP_URL];
+  }
+  if (process.env.NODE_ENV === "development") {
+    return [
+      "http://localhost:3000",
+      "http://localhost:3001",
+      "http://127.0.0.1:3000",
+    ];
+  }
+  return [];
+}
+
+export default auth(function middleware(request) {
+  const { pathname } = request.nextUrl;
+  const origin = request.headers.get("origin") ?? "";
+  const allowedOrigins = getAllowedOrigins();
+
+  // Only handle API routes
+  if (!pathname.startsWith("/api/")) {
+    return NextResponse.next();
+  }
+
+  // CORS preflight
+  if (request.method === "OPTIONS") {
+    const response = new NextResponse(null, { status: 204 });
+    return addCorsHeaders(response, origin, allowedOrigins);
+  }
+
+  // Skip auth routes — NextAuth handles them
+  if (isAuthRoute(pathname)) {
+    const response = NextResponse.next();
+    return addCorsHeaders(response, origin, allowedOrigins);
+  }
+
+  // Protected route check
+  if (isProtectedRoute(pathname, request.method)) {
+    if (!request.auth?.user) {
+      const response = NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
+      return addCorsHeaders(response, origin, allowedOrigins);
+    }
+  }
+
+  // Default: pass through with CORS
+  const response = NextResponse.next();
+  return addCorsHeaders(response, origin, allowedOrigins);
+});
 
 export const config = {
   matcher: "/api/:path*",
