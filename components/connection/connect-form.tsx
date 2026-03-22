@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { PlusIcon, Trash2Icon, ChevronDownIcon, ChevronUpIcon, Loader2Icon } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -21,7 +21,7 @@ interface KeyValuePair {
 
 type TransportType = "sse" | "streamable-http" | "stdio";
 
-export function ConnectForm() {
+function ConnectFormInner() {
   const searchParams = useSearchParams();
   const initialTransport = (searchParams.get("transport") as TransportType) ?? "sse";
   const [url, setUrl] = useState(searchParams.get("url") ?? "");
@@ -297,5 +297,13 @@ export function ConnectForm() {
         )}
       </button>
     </div>
+  );
+}
+
+export function ConnectForm() {
+  return (
+    <Suspense fallback={null}>
+      <ConnectFormInner />
+    </Suspense>
   );
 }
