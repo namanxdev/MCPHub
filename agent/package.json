@@ -1,0 +1,33 @@
+{
+  "name": "@mcphub/agent",
+  "version": "1.0.0",
+  "description": "Local agent for connecting MCPHub to localhost MCP servers",
+  "type": "module",
+  "bin": {
+    "mcphub-agent": "./bin/mcphub-agent.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node bin/mcphub-agent.js"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "mcphub",
+    "agent",
+    "bridge"
+  ],
+  "author": "MCPHub",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "ws": "^8.18.0",
+    "commander": "^12.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/ws": "^8.5.13",
+    "typescript": "^5.7.2"
+  }
+}
