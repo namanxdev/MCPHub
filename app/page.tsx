@@ -146,7 +146,7 @@ export default function Home() {
           >
             <MagneticButton href="/playground">Start Testing</MagneticButton>
             <Link
-              href="https://github.com/mcphub"
+              href="https://github.com/namanxdev/MCPHub"
               className="inline-flex items-center gap-3 px-12 py-6 text-lg font-medium border border-foreground/20 text-foreground transition-all hover:bg-foreground hover:text-background"
             >
               <Github className="w-5 h-5" />
