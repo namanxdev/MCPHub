@@ -5,13 +5,14 @@ import { motion } from "framer-motion";
 import { DocsSidebar, NavItem } from "@/components/docs/docs-sidebar";
 import { LineReveal } from "@/components/effects/line-reveal";
 import { Card, CardContent } from "@/components/ui/card";
-import { Terminal, Key, Server, Play, Activity } from "lucide-react";
+import { Terminal, Key, Server, Play, Activity, Zap } from "lucide-react";
 
 const NAV_ITEMS: NavItem[] = [
   { id: "intro", label: "Introduction" },
   { id: "playground", label: "Testing & Playground" },
   { id: "credentials", label: "Credentials Guide" },
   { id: "custom", label: "Custom Servers" },
+  { id: "desktop-agent", label: "Desktop Agent" },
   { id: "cli", label: "CLI & Automation" },
 ];
 
@@ -200,6 +201,88 @@ Environment: API_KEY=xxx`}
               <p>
                 If your server uses HTTP/SSSE, ensure CORS is enabled and point the Playground to the correct <code className="bg-foreground/10 px-1 py-0.5 rounded text-sm">/sse</code> endpoint.
               </p>
+            </div>
+          </section>
+
+          {/* Desktop Agent Section */}
+          <section id="desktop-agent" className="scroll-mt-28">
+            <h2 className="text-2xl font-bold mb-6 flex items-center gap-3 uppercase">
+              <Zap className="w-6 h-6 text-emerald-500" />
+              Desktop Agent
+            </h2>
+            <div className="text-lg text-foreground/70 leading-relaxed space-y-6">
+              <p>
+                The <strong>Desktop Agent</strong> is a small local process that bridges the cloud-deployed MCPHub to MCP servers running on your machine.
+                Without it, the deployed app cannot reach <code className="bg-foreground/10 px-1 py-0.5 rounded text-sm">localhost</code> — because
+                {" "}<code className="bg-foreground/10 px-1 py-0.5 rounded text-sm">localhost</code> on Vercel refers to Vercel's server, not yours.
+              </p>
+
+              <Card className="bg-emerald-500/5 border-emerald-500/20 rounded-none shadow-none">
+                <CardContent className="p-6">
+                  <p className="m-0 font-mono text-sm leading-relaxed text-foreground/80">
+                    <strong className="text-emerald-500">How it works:</strong> The agent runs on your machine and listens on{" "}
+                    <code className="bg-foreground/10 px-1 py-0.5 rounded">ws://localhost:54319</code>. MCPHub detects it automatically and shows a
+                    green{" "}<strong>⚡ DESKTOP AGENT DETECTED</strong>{" "}banner in the connect form. Enable the toggle and all MCP traffic routes through the agent instead of Vercel.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <h3 className="text-xl font-bold text-foreground mt-8 mb-4">Step 1 — Install the Agent</h3>
+              <p>Clone the repo and link the agent globally (one-time setup):</p>
+              <pre className="p-6 bg-foreground text-background overflow-x-auto text-sm font-mono my-4">
+                {`git clone https://github.com/naman/mcphub
+cd mcphub/agent
+npm install
+npm run build
+npm link          # makes mcphub-agent available globally`}
+              </pre>
+              <p className="text-sm text-foreground/50">
+                On Windows, run the terminal as Administrator if <code className="bg-foreground/10 px-1 py-0.5 rounded text-xs">npm link</code> fails with a permissions error.
+              </p>
+
+              <h3 className="text-xl font-bold text-foreground mt-8 mb-4">Step 2 — Start the Agent</h3>
+              <pre className="p-6 bg-foreground text-background overflow-x-auto text-sm font-mono my-4">
+                {`mcphub-agent start
+
+# Custom port (optional)
+mcphub-agent start --port 8888`}
+              </pre>
+              <p>
+                You should see: <code className="bg-foreground/10 px-1 py-0.5 rounded text-sm">🚀 MCPHub Agent listening on ws://localhost:54319</code>
+              </p>
+
+              <h3 className="text-xl font-bold text-foreground mt-8 mb-4">Step 3 — Connect a Local Server</h3>
+              <ol className="list-decimal pl-6 space-y-3 marker:text-foreground/40">
+                <li>Open the <strong>Playground</strong> — the green <strong>⚡ DESKTOP AGENT DETECTED</strong> banner appears automatically when the agent is running.</li>
+                <li>Enable the toggle in the banner.</li>
+                <li>Enter your local server URL (e.g. <code className="bg-foreground/10 px-1 py-0.5 rounded text-sm">http://localhost:8080/sse</code>) or switch to <strong>Command (Stdio)</strong> and type the command directly.</li>
+                <li>Click <strong>INITIALIZE</strong>. The agent handles the connection on your machine.</li>
+              </ol>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+                {[
+                  {
+                    title: "SSE / Streamable HTTP",
+                    desc: "Use for servers you started separately that expose an HTTP endpoint.",
+                    code: "http://localhost:8080/sse",
+                  },
+                  {
+                    title: "Stdio (Command)",
+                    desc: "The agent spawns the process directly on your machine. Add env vars in the form.",
+                    code: "npx -y @modelcontextprotocol/server-github",
+                  },
+                ].map((item, i) => (
+                  <Card key={i} className="border-foreground/10 rounded-none shadow-none bg-background">
+                    <CardContent className="p-6 flex flex-col h-full">
+                      <h3 className="font-bold text-foreground mb-2">{item.title}</h3>
+                      <p className="text-sm text-foreground/60 mb-6 flex-1">{item.desc}</p>
+                      <pre className="bg-foreground/5 p-3 overflow-x-auto text-[13px] font-mono text-foreground/80 border border-foreground/10">
+                        {item.code}
+                      </pre>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </div>
           </section>
 

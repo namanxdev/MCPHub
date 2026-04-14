@@ -2,50 +2,89 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { useConnectionStore } from "@/stores/connection-store";
+import { sendRequest, type SessionInfo } from "./use-desktop-agent";
 
 export type ConnectParams =
   | { transport: "sse" | "streamable-http"; url: string; headers?: Record<string, string> }
   | { transport: "stdio"; command: string; env?: Record<string, string> };
+
+export interface ConnectOptions {
+  agentMode?: boolean;
+}
 
 export function useConnection() {
   const store = useConnectionStore();
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const connect = useCallback(
-    async (params: ConnectParams) => {
+    async (params: ConnectParams, options?: ConnectOptions) => {
+      const { agentMode = false } = options || {};
+
       store.setConnecting();
       try {
-        const res = await fetch("/api/connect", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(params),
-        });
+        let data;
+        if (agentMode) {
+          // Connect through agent WebSocket
+          const payload: Record<string, unknown> = {
+            transport: params.transport,
+          };
 
-        const data = await res.json();
+          if (params.transport === "stdio") {
+            payload.command = params.command;
+            if (params.env) payload.env = params.env;
+          } else {
+            payload.url = params.url;
+            if (params.headers) payload.headers = params.headers;
+          }
 
-        if (!res.ok) {
-          store.setError(data.error ?? "Connection failed");
-          return false;
+          const sessionInfo = await sendRequest("connect", payload) as SessionInfo;
+          
+          data = {
+            sessionId: sessionInfo.sessionId,
+            serverInfo: sessionInfo.serverInfo,
+            capabilities: {
+              tools: sessionInfo.capabilities.tools || [],
+              resources: sessionInfo.capabilities.resources || [],
+              prompts: sessionInfo.capabilities.prompts || [],
+            },
+          };
+        } else {
+          // Connect through regular API route
+          const res = await fetch("/api/connect", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(params),
+          });
+
+          if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(errorData.error ?? "Connection failed");
+          }
+
+          data = await res.json();
         }
 
-        store.setConnected({
+        const sessionData = {
           sessionId: data.sessionId,
           url: params.transport !== "stdio" ? params.url : undefined,
           command: params.transport === "stdio" ? params.command : undefined,
           transport: params.transport,
           serverInfo: data.serverInfo,
-          tools: data.capabilities.tools,
-          resources: data.capabilities.resources,
-          prompts: data.capabilities.prompts,
+          tools: Array.isArray(data.capabilities.tools) ? data.capabilities.tools : [],
+          resources: Array.isArray(data.capabilities.resources) ? data.capabilities.resources : [],
+          prompts: Array.isArray(data.capabilities.prompts) ? data.capabilities.prompts : [],
           connectedAt: new Date(),
-        });
+          isAgentSession: agentMode,
+        };
+
+        store.setConnected(sessionData);
 
         store.addToHistory({
           url: params.transport !== "stdio" ? params.url : undefined,
           command: params.transport === "stdio" ? params.command : undefined,
           transport: params.transport,
           serverName: data.serverInfo.name,
-          toolCount: data.capabilities.tools.length,
+          toolCount: Array.isArray(data.capabilities.tools) ? data.capabilities.tools.length : 0,
           connectedAt: new Date(),
         });
 
@@ -69,18 +108,25 @@ export function useConnection() {
     const sessionId = store.session?.sessionId;
     if (!sessionId) return;
 
+    const isAgentSession = store.isAgentSession;
+
     try {
-      await fetch("/api/disconnect", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId }),
-      });
+      if (isAgentSession) {
+        // Send disconnect through agent WebSocket
+        await sendRequest("disconnect", { sessionId });
+      } else {
+        await fetch("/api/disconnect", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessionId }),
+        });
+      }
     } catch {
       // ignore fetch errors on disconnect
     } finally {
       store.setDisconnected();
     }
-  }, [store]);
+  }, [store, sendRequest]);
 
   const attemptReconnect = useCallback(async () => {
     const {
@@ -88,6 +134,7 @@ export function useConnection() {
       reconnectAttempts,
       maxReconnectAttempts,
       isReconnecting,
+      isAgentSession,
     } = useConnectionStore.getState();
 
     if (!lastConnectionParams || isReconnecting) return;
@@ -105,7 +152,7 @@ export function useConnection() {
     const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
 
     reconnectTimerRef.current = setTimeout(async () => {
-      const success = await connect(lastConnectionParams);
+      const success = await connect(lastConnectionParams, { agentMode: isAgentSession });
       if (!success) {
         store.setReconnecting(false);
         // Schedule next attempt
@@ -130,6 +177,7 @@ export function useConnection() {
     history: store.history,
     isReconnecting: store.isReconnecting,
     reconnectAttempts: store.reconnectAttempts,
+    isAgentSession: store.isAgentSession,
     connect,
     disconnect,
     attemptReconnect,

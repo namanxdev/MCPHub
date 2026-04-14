@@ -45,6 +45,7 @@ export interface ConnectionSession {
   resources: Resource[];
   prompts: Prompt[];
   connectedAt: Date;
+  isAgentSession?: boolean;
 }
 
 export interface ConnectionHistoryEntry {
@@ -77,6 +78,9 @@ interface ConnectionStore {
   isReconnecting: boolean;
   lastConnectionParams: LastConnectionParams | null;
 
+  // Agent session flag
+  isAgentSession: boolean;
+
   // Actions
   setConnecting: () => void;
   setConnected: (session: ConnectionSession) => void;
@@ -104,6 +108,7 @@ export const useConnectionStore = create<ConnectionStore>()(
       maxReconnectAttempts: 5,
       isReconnecting: false,
       lastConnectionParams: null,
+      isAgentSession: false,
 
       setConnecting: () => set({ status: "connecting", error: null }),
       setConnected: (session) =>
@@ -113,6 +118,7 @@ export const useConnectionStore = create<ConnectionStore>()(
           error: null,
           reconnectAttempts: 0,
           isReconnecting: false,
+          isAgentSession: session.isAgentSession || false,
           lastConnectionParams:
             session.transport === "stdio"
               ? { command: session.command!, transport: "stdio" }
@@ -120,7 +126,12 @@ export const useConnectionStore = create<ConnectionStore>()(
         }),
       setError: (error) => set({ status: "error", error }),
       setDisconnected: () =>
-        set({ session: null, status: "disconnected", error: null }),
+        set({ 
+          session: null, 
+          status: "disconnected", 
+          error: null,
+          isAgentSession: false 
+        }),
       addToHistory: (entry) =>
         set((state) => ({
           history: [

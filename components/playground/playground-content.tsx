@@ -13,6 +13,7 @@ import {
 import { ExecutionHistory } from "@/components/playground/execution-history";
 import { useConnectionStore } from "@/stores/connection-store";
 import { usePlaygroundStore } from "@/stores/playground-store";
+import { useDesktopAgent } from "@/hooks/use-desktop-agent";
 import type { JSONSchema } from "@/components/playground/json-schema-form";
 
 interface ToolCallResponse {
@@ -22,11 +23,14 @@ interface ToolCallResponse {
 
 export function PlaygroundContent() {
   const session = useConnectionStore((s) => s.session);
+  const isAgentSession = useConnectionStore((s) => s.isAgentSession);
   const selectedToolName = usePlaygroundStore((s) => s.selectedToolName);
   const formValues = usePlaygroundStore((s) => s.formValues);
   const isExecuting = usePlaygroundStore((s) => s.isExecuting);
   const setExecuting = usePlaygroundStore((s) => s.setExecuting);
   const addResult = usePlaygroundStore((s) => s.addResult);
+
+  const { sendRequest } = useDesktopAgent();
 
   const [executeError, setExecuteError] = useState<string | null>(null);
   const [currentResponse, setCurrentResponse] =
@@ -48,37 +52,67 @@ export function PlaygroundContent() {
     setExecuting(true);
 
     try {
-      const res = await fetch("/api/tools/call", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      let resultData: ToolCallResponse;
+      const startTime = Date.now();
+
+      if (isAgentSession) {
+        // Send tool call through agent WebSocket
+        const payload = await sendRequest("call_tool", {
           sessionId: session.sessionId,
-          toolName: selectedToolName,
+          name: selectedToolName,
           arguments: formValues,
-        }),
-      });
+        }) as Record<string, unknown>;
 
-      const data = (await res.json()) as ToolCallResponse | { error: string };
+        // Map agent response to ToolCallResponse format
+        // The agent returns the raw result from client.callTool()
+        resultData = {
+          result: {
+            content: (payload?.content as ToolCallResult["content"]) || [],
+            isError: (payload?.isError as boolean) || false,
+          },
+          meta: {
+            latencyMs: Date.now() - startTime,
+            responseBytes: JSON.stringify(payload).length,
+            timestamp: new Date().toISOString(),
+          },
+        };
+      } else {
+        // Send tool call through regular API route
+        const res = await fetch("/api/tools/call", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sessionId: session.sessionId,
+            toolName: selectedToolName,
+            arguments: formValues,
+          }),
+        });
 
-      if (!res.ok || "error" in data) {
-        const errMsg = "error" in data ? data.error : `HTTP ${res.status}`;
-        setExecuteError(errMsg);
-        setExecuting(false);
-        return;
+        const data = (await res.json()) as ToolCallResponse | { error: string };
+
+        if (!res.ok || "error" in data) {
+          const errMsg = "error" in data ? data.error : `HTTP ${res.status}`;
+          setExecuteError(errMsg);
+          setExecuting(false);
+          return;
+        }
+
+        resultData = data as ToolCallResponse;
+        resultData.meta.latencyMs = Date.now() - startTime;
+        resultData.meta.timestamp = new Date().toISOString();
       }
 
-      const { result, meta } = data as ToolCallResponse;
-      setCurrentResponse({ result, meta });
+      setCurrentResponse(resultData);
 
       addResult({
         id: crypto.randomUUID(),
         timestamp: new Date(),
         toolName: selectedToolName,
         arguments: formValues,
-        result,
-        isError: result?.isError ?? false,
-        latencyMs: meta.latencyMs,
-        responseBytes: meta.responseBytes,
+        result: resultData.result,
+        isError: resultData.result?.isError ?? false,
+        latencyMs: resultData.meta.latencyMs,
+        responseBytes: resultData.meta.responseBytes,
       });
 
       // Optional: Auto scroll to result if desired.
@@ -92,7 +126,7 @@ export function PlaygroundContent() {
     } finally {
       setExecuting(false);
     }
-  }, [session, selectedToolName, formValues, isExecuting, setExecuting, addResult]);
+  }, [session, selectedToolName, formValues, isExecuting, setExecuting, addResult, isAgentSession, sendRequest]);
 
   // Keyboard shortcut: Ctrl+Enter / Cmd+Enter
   useEffect(() => {

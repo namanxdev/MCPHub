@@ -1,8 +1,8 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { PlusIcon, Trash2Icon, ChevronDownIcon, ChevronUpIcon, Loader2Icon } from "lucide-react";
+import { PlusIcon, Trash2Icon, ChevronDownIcon, ChevronUpIcon, Loader2Icon, ZapIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useConnection } from "@/hooks/use-connection";
+import { useDesktopAgent } from "@/hooks/use-desktop-agent";
 
 interface KeyValuePair {
   key: string;
@@ -42,9 +43,24 @@ function ConnectFormInner() {
     return !!searchParams.get("requiredEnvVars");
   });
 
+  // Desktop Agent state
+  const { isAvailable: isAgentAvailable } = useDesktopAgent();
+  const [agentMode, setAgentMode] = useState(false);
+
   const { status, connect } = useConnection();
   const isConnecting = status === "connecting";
   const isStdio = transport === "stdio";
+
+  // Reset agent mode when agent becomes unavailable
+  useEffect(() => {
+    if (!isAgentAvailable && agentMode) {
+      // Use setTimeout to avoid synchronous state update in effect
+      const timer = setTimeout(() => {
+        setAgentMode(false);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [isAgentAvailable, agentMode]);
 
   function addHeader() {
     setHeaders((prev) => [...prev, { key: "", value: "" }]);
@@ -85,7 +101,7 @@ function ConnectFormInner() {
         transport: "stdio",
         command: command.trim(),
         env: Object.keys(env).length > 0 ? env : undefined,
-      });
+      }, { agentMode });
     } else {
       if (!url.trim()) return;
       const headersObj = headers.reduce<Record<string, string>>((acc, h) => {
@@ -96,7 +112,7 @@ function ConnectFormInner() {
         transport,
         url: url.trim(),
         headers: Object.keys(headersObj).length > 0 ? headersObj : undefined,
-      });
+      }, { agentMode });
     }
   }
 
@@ -108,6 +124,55 @@ function ConnectFormInner() {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Desktop Agent Banner */}
+      {isAgentAvailable && (
+        <div className="border-2 border-emerald-500/20 bg-emerald-500/5 p-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <ZapIcon className="size-5 text-emerald-500" />
+              <div className="flex flex-col">
+                <span className="font-mono text-xs font-bold uppercase tracking-widest text-emerald-500">
+                  ⚡ DESKTOP AGENT DETECTED
+                </span>
+                <span className="font-mono text-[10px] text-emerald-500/70 uppercase tracking-widest">
+                  Route connections through local agent
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setAgentMode(!agentMode)}
+              disabled={isConnecting}
+              className={`relative inline-flex h-6 w-12 flex-shrink-0 cursor-pointer rounded-none border-2 transition-colors ${
+                agentMode 
+                  ? 'border-emerald-500 bg-emerald-500' 
+                  : 'border-foreground/20 bg-foreground/[0.02]'
+              }`}
+              aria-label={agentMode ? "Disable agent mode" : "Enable agent mode"}
+            >
+              <span
+                className={`pointer-events-none inline-block h-full w-1/2 transform transition-transform ${
+                  agentMode ? 'translate-x-full' : 'translate-x-0'
+                }`}
+              >
+                <span className="absolute inset-0 flex h-full w-full items-center justify-center bg-background border">
+                  <span className="h-4 w-0.5" />
+                </span>
+              </span>
+            </button>
+          </div>
+          {agentMode && (
+            <div className="mt-3 pt-3 border-t border-emerald-500/20">
+              <span className="font-mono text-[10px] text-emerald-500/70 uppercase tracking-widest">
+                • Connection will use ws://localhost:54319
+                <br />
+                • Tool calls will route through local agent
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="flex flex-col gap-3">
         <Label htmlFor="transport-select" className="font-mono text-[10px] font-bold uppercase tracking-widest text-foreground/60">Transport Protocol</Label>
         <Select
