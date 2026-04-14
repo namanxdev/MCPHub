@@ -61,7 +61,16 @@ export class MCPBridge {
       mcpTransport = createHTTPTransport({ url, headers });
     } else if (transport === 'stdio') {
       if (!command) throw new Error('Command is required for stdio transport');
-      mcpTransport = createStdioTransport({ command, args, env });
+      // Split full command string into executable + args when args not provided separately
+      // e.g. "npx -y @modelcontextprotocol/server-github" → cmd="npx", args=["-y", "..."]
+      let cmd = command;
+      let cmdArgs = args;
+      if (!cmdArgs || cmdArgs.length === 0) {
+        const parts = command.trim().split(/\s+/);
+        cmd = parts[0];
+        cmdArgs = parts.slice(1);
+      }
+      mcpTransport = createStdioTransport({ command: cmd, args: cmdArgs, env });
     } else {
       throw new Error(`Unsupported transport type: ${transport}`);
     }
