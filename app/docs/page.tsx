@@ -230,7 +230,7 @@ Environment: API_KEY=xxx`}
               <h3 className="text-xl font-bold text-foreground mt-8 mb-4">Step 1 — Install the Agent</h3>
               <p>Install globally from npm (one-time setup, Node.js 18+ required):</p>
               <pre className="p-6 bg-foreground text-background overflow-x-auto text-sm font-mono my-4">
-                {`npm install -g @mcphub/agent`}
+                {`npm install -g @naman_411/mcphub-agent`}
               </pre>
               <p className="text-sm text-foreground/50">
                 On Windows, run the terminal as Administrator if you get a permissions error.

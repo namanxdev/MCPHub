@@ -1,5 +1,5 @@
 {
-  "name": "@mcphub/agent",
+  "name": "@naman_411/mcphub-agent",
   "version": "1.0.0",
   "description": "Local agent for connecting MCPHub to localhost MCP servers",
   "type": "module",
