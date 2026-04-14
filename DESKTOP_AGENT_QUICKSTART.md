@@ -12,31 +12,18 @@ The Desktop Agent is a lightweight CLI tool that allows the deployed MCPHub web 
 - npm or pnpm
 - A local MCP server to test with
 
-## Installation (3 steps)
+## Installation
 
-### Step 1: Navigate to agent directory
-
-```bash
-cd agent
-```
-
-### Step 2: Install and build
+Install globally from npm (Node.js 18+ required):
 
 ```bash
-npm install
-npm run build
+npm install -g @naman_411/mcphub-agent
+
+# verify
+mcphub-agent --version
 ```
 
-### Step 3: Link globally (optional but recommended)
-
-```bash
-npm link
-```
-
-Or use the Windows installer:
-```bash
-install.bat
-```
+> On Windows, run the terminal as Administrator if you get a permissions error.
 
 ## Usage
 
@@ -54,33 +41,24 @@ Waiting for connections from MCPHub web app...
 
 **Leave this terminal running!**
 
-### Start Your Local MCP Server
-
-In a **new terminal**, start your local MCP server. For example:
-
-```bash
-# GitHub server
-GITHUB_PERSONAL_ACCESS_TOKEN="ghp_xxx" npx -y mcp-proxy --shell -- npx -y @modelcontextprotocol/server-github
-
-# Filesystem server
-npx -y mcp-proxy -- npx -y @modelcontextprotocol/server-filesystem /path/to/folder
-
-# Any stdio server
-npx -y mcp-proxy --shell -- your-mcp-server-command
-```
-
-The server will typically start on `http://localhost:8080/sse`.
-
 ### Connect from MCPHub Web
 
-1. **Open MCPHub** in your browser (e.g., `mcp-hub-pi.vercel.app`)
-2. **Go to Playground**
-3. **Look for the Desktop Agent indicator**:
-   - You should see a box with a green ⚡ icon labeled "Desktop Agent"
-   - If you see this, the agent is detected!
-4. **Enable the toggle** - Click the switch to turn it on (green)
-5. **Enter your server URL** - e.g., `http://localhost:8080/sse`
-6. **Click INITIALIZE** - Connection should succeed!
+1. **Open MCPHub** in your browser (`mcp-hub-pi.vercel.app/playground`)
+2. **Look for the green ⚡ DESKTOP AGENT DETECTED banner** — appears automatically when the agent is running
+3. **Enable the toggle**
+4. Choose your transport:
+   - **SSE/HTTP** — enter your local server URL (e.g. `http://localhost:8080/sse`)
+   - **Command (Stdio)** — type the command directly, add env vars in the form
+5. **Click INITIALIZE**
+
+**Example — GitHub MCP server via stdio (no mcp-proxy needed):**
+
+In the connect form, set:
+- Transport: `Command (Stdio)`
+- Command: `npx -y @modelcontextprotocol/server-github`
+- Env var: `GITHUB_PERSONAL_ACCESS_TOKEN` = your token
+
+The agent spawns the process on your machine directly.
 
 ## Verify It's Working
 

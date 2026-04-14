@@ -13,6 +13,7 @@
 - **Health Dashboard** — P50/P95/P99 latency, error rates, uptime per tool.
 - **Public Registry** — Searchable directory of community MCP servers with status badges.
 - **Multi-transport** — SSE, Streamable HTTP, and stdio (command) connections.
+- **Desktop Agent** — Connect the deployed app to local MCP servers via a local WebSocket bridge.
 - **Auth** — GitHub and Google OAuth via NextAuth.js v5.
 
 ---
@@ -39,7 +40,6 @@
 ### 1. Install dependencies
 
 ```bash
-cd frontend
 npm install
 ```
 
@@ -163,6 +163,19 @@ stores/
 ├── playground-store.ts   # Tool state + execution history
 └── inspector-store.ts    # Messages, filters, selection
 ```
+
+---
+
+## Desktop Agent
+
+To connect the deployed app to MCP servers running on your local machine:
+
+```bash
+npm install -g @naman_411/mcphub-agent
+mcphub-agent start
+```
+
+Then open the Playground — a green **⚡ DESKTOP AGENT DETECTED** banner appears. Enable the toggle and connect to any local server (SSE URL or stdio command). See [DESKTOP_AGENT_QUICKSTART.md](DESKTOP_AGENT_QUICKSTART.md) for full instructions.
 
 ---
 

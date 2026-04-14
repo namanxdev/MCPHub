@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { DocsSidebar, NavItem } from "@/components/docs/docs-sidebar";
 import { LineReveal } from "@/components/effects/line-reveal";
 import { Card, CardContent } from "@/components/ui/card";
-import { Terminal, Key, Server, Play, Activity, Zap } from "lucide-react";
+import { Terminal, Key, Server, Play, Activity, Zap, Copy, Check } from "lucide-react";
 
 const NAV_ITEMS: NavItem[] = [
   { id: "intro", label: "Introduction" },
@@ -15,6 +15,19 @@ const NAV_ITEMS: NavItem[] = [
   { id: "desktop-agent", label: "Desktop Agent" },
   { id: "cli", label: "CLI & Automation" },
 ];
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+      className="absolute top-3 right-3 p-1.5 border border-background/20 hover:bg-background/20 transition-colors text-background/60 hover:text-background"
+      aria-label="Copy to clipboard"
+    >
+      {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+    </button>
+  );
+}
 
 export default function DocsPage() {
   const [activeId, setActiveId] = useState<string>("intro");
@@ -229,20 +242,23 @@ Environment: API_KEY=xxx`}
 
               <h3 className="text-xl font-bold text-foreground mt-8 mb-4">Step 1 — Install the Agent</h3>
               <p>Install globally from npm (one-time setup, Node.js 18+ required):</p>
-              <pre className="p-6 bg-foreground text-background overflow-x-auto text-sm font-mono my-4">
-                {`npm install -g @naman_411/mcphub-agent`}
-              </pre>
+              <div className="relative my-4">
+                <pre className="p-6 bg-foreground text-background overflow-x-auto text-sm font-mono">
+                  {`npm install -g @naman_411/mcphub-agent`}
+                </pre>
+                <CopyButton text="npm install -g @naman_411/mcphub-agent" />
+              </div>
               <p className="text-sm text-foreground/50">
                 On Windows, run the terminal as Administrator if you get a permissions error.
               </p>
 
               <h3 className="text-xl font-bold text-foreground mt-8 mb-4">Step 2 — Start the Agent</h3>
-              <pre className="p-6 bg-foreground text-background overflow-x-auto text-sm font-mono my-4">
-                {`mcphub-agent start
-
-# Custom port (optional)
-mcphub-agent start --port 8888`}
-              </pre>
+              <div className="relative my-4">
+                <pre className="p-6 bg-foreground text-background overflow-x-auto text-sm font-mono">
+                  {`mcphub-agent start\n\n# Custom port (optional)\nmcphub-agent start --port 8888`}
+                </pre>
+                <CopyButton text="mcphub-agent start" />
+              </div>
               <p>
                 You should see: <code className="bg-foreground/10 px-1 py-0.5 rounded text-sm">🚀 MCPHub Agent listening on ws://localhost:54319</code>
               </p>
