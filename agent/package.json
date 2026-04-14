@@ -9,8 +9,13 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "start": "node bin/mcphub-agent.js"
+    "start": "node bin/mcphub-agent.js",
+    "prepublishOnly": "npm run build"
   },
+  "files": [
+    "bin/",
+    "dist/"
+  ],
   "keywords": [
     "mcp",
     "model-context-protocol",

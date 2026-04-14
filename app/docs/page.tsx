@@ -228,16 +228,12 @@ Environment: API_KEY=xxx`}
               </Card>
 
               <h3 className="text-xl font-bold text-foreground mt-8 mb-4">Step 1 — Install the Agent</h3>
-              <p>Clone the repo and link the agent globally (one-time setup):</p>
+              <p>Install globally from npm (one-time setup, Node.js 18+ required):</p>
               <pre className="p-6 bg-foreground text-background overflow-x-auto text-sm font-mono my-4">
-                {`git clone https://github.com/naman/mcphub
-cd mcphub/agent
-npm install
-npm run build
-npm link          # makes mcphub-agent available globally`}
+                {`npm install -g @mcphub/agent`}
               </pre>
               <p className="text-sm text-foreground/50">
-                On Windows, run the terminal as Administrator if <code className="bg-foreground/10 px-1 py-0.5 rounded text-xs">npm link</code> fails with a permissions error.
+                On Windows, run the terminal as Administrator if you get a permissions error.
               </p>
 
               <h3 className="text-xl font-bold text-foreground mt-8 mb-4">Step 2 — Start the Agent</h3>
