@@ -92,13 +92,23 @@ export class MCPBridge {
 
     this.sessions.set(sessionId, client);
 
-    // Fetch server info and capabilities
+    // Fetch server info
     const serverInfo = client.getServerVersion();
-    const serverCapabilities = client.getServerCapabilities();
+
+    // Enumerate capabilities — same pattern as /api/connect route
+    const [toolsResult, resourcesResult, promptsResult] = await Promise.allSettled([
+      client.listTools(),
+      client.listResources(),
+      client.listPrompts(),
+    ]);
+
+    const tools = toolsResult.status === 'fulfilled' ? toolsResult.value.tools : [];
+    const resources = resourcesResult.status === 'fulfilled' ? resourcesResult.value.resources : [];
+    const prompts = promptsResult.status === 'fulfilled' ? promptsResult.value.prompts : [];
 
     const sessionInfo: SessionInfo = {
       sessionId,
-      capabilities: serverCapabilities || {},
+      capabilities: { tools, resources, prompts },
       serverInfo: serverInfo || { name: 'unknown', version: 'unknown' },
     };
 
