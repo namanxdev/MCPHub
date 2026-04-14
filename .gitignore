@@ -62,3 +62,6 @@ Thumbs.db
 # lock files (optional — uncomment to ignore)
 # package-lock.json
 # pnpm-lock.yaml
+
+# aider
+.aider*
