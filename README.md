@@ -1,51 +1,163 @@
-# MCPHub — The MCP Development Platform
+# MCPHub
 
-> Postman for Model Context Protocol. Connect, test, debug, and monitor any MCP server.
+**The developer platform for Model Context Protocol.**
+Discover, test, debug, and monitor any MCP server — from a single browser tab.
 
-**Live:** [mcp-hub-pi.vercel.app](https://mcp-hub-pi.vercel.app)
+**[mcp-hub-pi.vercel.app](https://mcp-hub-pi.vercel.app)** · [Playground](https://mcp-hub-pi.vercel.app/playground) · [Registry](https://mcp-hub-pi.vercel.app/registry) · [Docs](https://mcp-hub-pi.vercel.app/docs)
+
+---
+
+## What is MCPHub?
+
+[MCP (Model Context Protocol)](https://modelcontextprotocol.io) is the open standard for connecting AI models to external tools and data — think of it as USB-C for AI agents. There are now 1,000+ MCP servers in the wild, built by teams at Anthropic, Microsoft, Stripe, and the broader open-source community.
+
+The problem: **the developer tooling hasn't kept up.**
+
+Testing an MCP server today means running a local CLI inspector, manually constructing JSON-RPC messages, and getting zero visibility into performance, errors, or reliability. There's no shared registry, no debugging tools, no CI/CD integration.
+
+**MCPHub is Postman for MCP.** A hosted, web-based platform where you can:
+
+- **Connect** to any MCP server in seconds
+- **Test** every tool through auto-generated forms — no code required
+- **Debug** protocol-level JSON-RPC exchanges in real time
+- **Monitor** latency, error rates, and uptime over time
+- **Discover** community servers in a live, searchable registry
+- **Automate** health checks in CI/CD with a single CLI command
 
 ---
 
 ## Features
 
-- **Playground** — Auto-generated forms for every tool. Execute with live results.
-- **Protocol Inspector** — Real-time JSON-RPC message viewer with latency timing.
-- **Health Dashboard** — P50/P95/P99 latency, error rates, uptime per tool.
-- **Public Registry** — Searchable directory of community MCP servers with status badges.
-- **Multi-transport** — SSE, Streamable HTTP, and stdio (command) connections.
-- **Desktop Agent** — Connect the deployed app to local MCP servers via a local WebSocket bridge.
-- **Auth** — GitHub and Google OAuth via NextAuth.js v5.
+### Playground
+Connect to any MCP server (SSE, Streamable HTTP, or stdio via the Desktop Agent) and instantly get an interactive UI for every tool it exposes. MCPHub reads each tool's JSON Schema and renders the right input — text fields, dropdowns, toggles, nested object editors — so you can test without writing a line of code.
+
+- Auto-generated forms from tool `inputSchema`
+- Live response viewer with syntax-highlighted JSON
+- Execution history with timestamps and durations
+- Save parameter presets for repeated test cases
+- Works with any MCP server — no configuration needed
+
+### Protocol Inspector
+A real-time view of every JSON-RPC message flowing between MCPHub and your server. See the exact bytes on the wire, correlate requests to responses, measure round-trip latency per message.
+
+This is what Chrome DevTools does for HTTP — but for MCP.
+
+- Bidirectional message stream (→ requests, ← responses)
+- Syntax-highlighted JSON with collapsible trees
+- Latency timing per message
+- Filter by method, direction, or keyword
+- Pause, resume, and clear the stream
+
+### Health Dashboard
+Per-tool performance metrics collected automatically during every session and from scheduled health checks. Know at a glance whether a server is fast, reliable, and still online.
+
+- P50 / P95 / P99 latency per tool
+- Error rate and error type breakdown
+- Response size distribution
+- Uptime history
+- Embeddable status badges for README files
+
+### Registry
+A searchable, community-driven directory of MCP servers — with live health data attached to every entry. Not a static markdown file. Every server in the registry is periodically health-checked and gets a status badge reflecting its current state.
+
+- Full-text search by name, description, or capability
+- Filter by transport type, category, and health status
+- "Test in Playground" — click to connect directly
+- Community submissions via GitHub OAuth
+- Status badges you can embed in your own docs
+
+### CLI Tool
+
+Run a full MCP health check from the terminal or CI/CD pipeline:
+
+```bash
+npx mcphub test https://your-server.example.com/sse
+```
+
+```
+  MCPHub Test — https://your-server.example.com/sse
+  Transport: sse | 2026-06-22T10:30:00Z
+
+  ✓ Connection                (142ms)   Connected to my-server v1.2.0
+  ✓ Initialize Handshake      (130ms)   Protocol: 2024-11-05
+  ✓ Protocol Version          (0ms)     Supported
+  ✓ Tools List                (85ms)    5 tools found
+  ✓ Tool Schemas              (2ms)     All 5 schemas valid
+  ✓ Resources List            (62ms)    2 resources found
+  ✓ Prompts List              (58ms)    1 prompt found
+
+  ─────────────────────────────────────────
+  7/7 checks passed — 479ms total
+  Capabilities: 5 tools · 2 resources · 1 prompt
+```
+
+Exit code `0` on pass, `1` on any failure. Plug it straight into GitHub Actions:
+
+```yaml
+- name: Test MCP server
+  run: npx mcphub test http://localhost:3001/sse --junit results.xml
+```
+
+**Flags:**
+
+| Flag | What it does |
+|------|-------------|
+| `--json` | Machine-readable JSON output |
+| `--smoke-test` | Invoke each tool and verify it doesn't crash the server |
+| `--verbose` | Print raw JSON-RPC messages |
+| `--timeout <ms>` | Per-check timeout (default: 30 000) |
+| `-H "Key: Value"` | Custom request headers (repeatable) |
+| `--junit <path>` | JUnit XML output for CI test reporters |
+| `--watch` | Re-run on interval during development |
+
+### Desktop Agent
+The deployed MCPHub app runs in the cloud, but your local MCP servers don't. The Desktop Agent is a lightweight bridge — install it once, and the web app can reach `localhost` just like Postman's desktop agent.
+
+```bash
+npm install -g @naman_411/mcphub-agent
+mcphub-agent start
+```
+
+When the agent is running, the Playground shows a **⚡ DESKTOP AGENT DETECTED** banner. Enable it and connect to any local server — via URL or stdio command — directly from the browser.
 
 ---
 
-## Tech Stack
+## Why MCPHub?
 
-| Layer | Tech |
-|-------|------|
-| Framework | Next.js 16 (App Router, React 19) |
-| Language | TypeScript 5 |
-| Styling | Tailwind CSS 4 + shadcn/ui |
-| State | Zustand 5 |
-| Database | Neon PostgreSQL + Drizzle ORM |
-| Auth | NextAuth.js v5 (GitHub + Google) |
-| MCP | @modelcontextprotocol/sdk |
-| Animations | Framer Motion |
-| Charts | Recharts |
-| Deploy | Vercel |
+Existing tools each solve one piece of the problem:
+
+| | MCP Inspector | Smithery.ai | awesome-mcp-servers | Postman | **MCPHub** |
+|---|:---:|:---:|:---:|:---:|:---:|
+| Server discovery / registry | — | ✓ | ✓ | — | **✓** |
+| Connect to arbitrary servers | ✓ | — | — | — | **✓** |
+| Auto-generated tool forms | ✓ | — | — | — | **✓** |
+| Protocol message inspection | — | — | — | — | **✓** |
+| Health & latency monitoring | — | — | — | — | **✓** |
+| Web-based (shareable) | — | ✓ | ✓ | ✓ | **✓** |
+| CI/CD automation | — | — | — | ✓ | **✓** |
+| Open source / self-hostable | ✓ | — | ✓ | — | **✓** |
+
+MCPHub is the only tool that does all of these together.
 
 ---
 
 ## Getting Started
 
-### 1. Install dependencies
+### Use the hosted version
+
+Open **[mcp-hub-pi.vercel.app](https://mcp-hub-pi.vercel.app)** — no account required for the Playground or Registry.
+
+### Run locally
+
+**1. Clone and install**
 
 ```bash
+git clone https://github.com/yourusername/mcphub
+cd mcphub
 npm install
 ```
 
-### 2. Configure environment
-
-Copy `.env.example` to `.env` and fill in the values:
+**2. Configure environment**
 
 ```bash
 cp .env.example .env
@@ -69,14 +181,14 @@ AUTH_GOOGLE_ID=your-google-oauth-client-id
 AUTH_GOOGLE_SECRET=your-google-oauth-client-secret
 ```
 
-### 3. Set up the database
+**3. Set up the database**
 
 ```bash
-npm run db:push    # Push schema to Neon
-npm run db:seed    # Seed registry with initial servers
+npm run db:setup   # Create tables
+npm run db:seed    # Seed the registry
 ```
 
-### 4. Run locally
+**4. Start**
 
 ```bash
 npm run dev
@@ -88,22 +200,18 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## OAuth Setup
 
-### GitHub OAuth App
+### GitHub
 
-1. Go to [github.com/settings/developers](https://github.com/settings/developers) → **OAuth Apps** → **New OAuth App**
-2. Set **Authorization callback URL**:
-   - Local: `http://localhost:3000/api/auth/callback/github`
-   - Production: `https://YOUR-DOMAIN.vercel.app/api/auth/callback/github`
-3. Copy **Client ID** → `AUTH_GITHUB_ID` and generate **Client Secret** → `AUTH_GITHUB_SECRET`
+1. [github.com/settings/developers](https://github.com/settings/developers) → **OAuth Apps** → **New OAuth App**
+2. Callback URL: `http://localhost:3000/api/auth/callback/github` (or your Vercel domain)
+3. Copy **Client ID** → `AUTH_GITHUB_ID`, **Client Secret** → `AUTH_GITHUB_SECRET`
 
-### Google OAuth
+### Google
 
-1. Go to [console.cloud.google.com](https://console.cloud.google.com) → **APIs & Services** → **Credentials** → **Create OAuth Client ID**
+1. [console.cloud.google.com](https://console.cloud.google.com) → **APIs & Services** → **Credentials** → **Create OAuth Client ID**
 2. Application type: **Web application**
-3. Add **Authorized redirect URIs**:
-   - Local: `http://localhost:3000/api/auth/callback/google`
-   - Production: `https://YOUR-DOMAIN.vercel.app/api/auth/callback/google`
-4. Copy **Client ID** → `AUTH_GOOGLE_ID` and **Client Secret** → `AUTH_GOOGLE_SECRET`
+3. Redirect URI: `http://localhost:3000/api/auth/callback/google`
+4. Copy **Client ID** → `AUTH_GOOGLE_ID`, **Client Secret** → `AUTH_GOOGLE_SECRET`
 
 ---
 
@@ -113,77 +221,71 @@ Open [http://localhost:3000](http://localhost:3000).
 npm run dev        # Start dev server
 npm run build      # Production build
 npm run lint       # ESLint
-npm run test       # Run Vitest tests
-npm run db:push    # Push Drizzle schema to Neon
+npm run test       # Vitest
+npm run db:setup   # Create database tables
+npm run db:push    # Push Drizzle schema changes
 npm run db:seed    # Seed registry data
 ```
+
+---
+
+## Deploy to Vercel
+
+1. Push to GitHub and import the repo at [vercel.com](https://vercel.com)
+2. Add all `.env` variables in **Settings → Environment Variables**
+3. Redeploy
+
+The included `vercel.json` registers a cron job that runs `/api/cron/health-check` daily at midnight UTC to refresh registry health data.
+
+---
+
+## Tech Stack
+
+| | |
+|---|---|
+| Framework | Next.js 16 (App Router, React 19) |
+| Language | TypeScript 5 |
+| Styling | Tailwind CSS 4 + shadcn/ui |
+| State | Zustand 5 |
+| Database | Neon PostgreSQL + Drizzle ORM |
+| Auth | NextAuth.js v5 |
+| MCP | @modelcontextprotocol/sdk |
+| Animations | Framer Motion |
+| Charts | Recharts |
+| Syntax highlighting | Shiki |
+| Deploy | Vercel |
 
 ---
 
 ## Project Structure
 
 ```
-app/
-├── (pages)/
-│   ├── page.tsx              # Landing page
-│   ├── playground/           # Tool playground
-│   ├── inspector/            # Protocol inspector
-│   ├── dashboard/            # Health dashboard
-│   ├── registry/             # MCP server registry
-│   ├── docs/                 # Documentation
-│   └── login/                # OAuth login
-└── api/
-    ├── auth/[...nextauth]/   # NextAuth handler
-    ├── connect/              # MCP connection
-    ├── disconnect/           # MCP disconnect
-    ├── tools/call/           # Tool execution
-    ├── messages/stream/      # SSE message stream
-    ├── registry/             # Registry CRUD
-    ├── badge/[serverId]/     # Status badge SVG
-    └── cron/health-check/    # Daily health monitor
+app/                        # Next.js App Router
+├── page.tsx                # Landing page
+├── playground/             # Tool playground
+├── inspector/              # Protocol inspector
+├── dashboard/              # Health dashboard
+├── registry/               # Server registry
+├── docs/                   # Documentation
+└── api/                    # API routes (MCP proxy, registry, auth, cron)
 
-components/
-├── auth/         # Session provider, user menu, login card
-├── connection/   # Connect form (URL / stdio)
-├── playground/   # Tool selector, form builder, results
-├── inspector/    # Message list, filters, detail panel
-├── dashboard/    # Metrics cards, charts, error log
-├── registry/     # Server grid, search, filters
-├── navigation/   # Animated navbar, footer
-└── ui/           # shadcn/ui components
-
-lib/
-├── mcp/          # ConnectionManager, ProtocolLogger, HealthCollector
-├── db/           # Drizzle client + schema
-├── auth/         # NextAuth config
-└── rate-limit.ts # Per-route rate limiters
-
-stores/
-├── connection-store.ts   # Active session + history (persisted)
-├── playground-store.ts   # Tool state + execution history
-└── inspector-store.ts    # Messages, filters, selection
+components/                 # React components (playground, inspector, registry, etc.)
+lib/                        # Server logic (ConnectionManager, ProtocolLogger, Drizzle)
+stores/                     # Zustand state (connection, playground, inspector)
+hooks/                      # Custom React hooks
+cli/                        # CLI package — `npx mcphub test`
+agent/                      # Desktop Agent — `mcphub-agent`
+scripts/                    # DB setup and seeding
 ```
 
 ---
 
-## Desktop Agent
+## Desktop Agent — Full Docs
 
-To connect the deployed app to MCP servers running on your local machine:
-
-```bash
-npm install -g @naman_411/mcphub-agent
-mcphub-agent start
-```
-
-Then open the Playground — a green **⚡ DESKTOP AGENT DETECTED** banner appears. Enable the toggle and connect to any local server (SSE URL or stdio command). See [DESKTOP_AGENT_QUICKSTART.md](DESKTOP_AGENT_QUICKSTART.md) for full instructions.
+See **[DESKTOP_AGENT_QUICKSTART.md](DESKTOP_AGENT_QUICKSTART.md)** for installation, usage, and troubleshooting.
 
 ---
 
-## Deployment (Vercel)
+## License
 
-1. Push to GitHub and import the repo in [vercel.com](https://vercel.com)
-2. Set **Root Directory** to `frontend`
-3. Add all environment variables from `.env` in **Settings → Environment Variables**
-4. Redeploy after adding variables
-
-The `vercel.json` cron job runs `/api/cron/health-check` daily at midnight UTC.
+MIT
