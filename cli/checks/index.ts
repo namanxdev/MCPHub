@@ -103,9 +103,18 @@ export async function runChecks(
 
   // Check 8: Smoke Test (optional)
   if (target.smokeTest && toolsResult.passed && toolsResult.details?.tools) {
-    const tools = toolsResult.details.tools as Array<{ name: string; inputSchema?: unknown }>;
+    const tools = toolsResult.details.tools as Array<{
+      name: string;
+      inputSchema?: unknown;
+      annotations?: { readOnlyHint?: boolean; destructiveHint?: boolean };
+    }>;
     if (tools.length > 0) {
-      const smokeResult = await checkSmokeTest(client, tools, target.timeout);
+      const smokeResult = await checkSmokeTest(
+        client,
+        tools,
+        target.timeout,
+        target.smokeTestUnsafe ?? false
+      );
       checks.push(smokeResult);
     }
   }

@@ -3,10 +3,24 @@ import { getDb } from "@/lib/db";
 import { servers, serverHealthChecks } from "@/lib/db/schema";
 import { eq, or, desc } from "drizzle-orm";
 
-function renderBadge(label: string, message: string, color: string): string {
-  const labelWidth = Math.max(label.length * 6.5 + 10, 30);
-  const messageWidth = Math.max(message.length * 6.5 + 10, 30);
+// Escape XML special chars so a user-submitted server name can't inject markup
+// into the SVG (stored-XSS / broken-badge protection).
+function escapeXml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+function renderBadge(rawLabel: string, rawMessage: string, color: string): string {
+  const labelWidth = Math.max(rawLabel.length * 6.5 + 10, 30);
+  const messageWidth = Math.max(rawMessage.length * 6.5 + 10, 30);
   const totalWidth = labelWidth + messageWidth;
+
+  const label = escapeXml(rawLabel);
+  const message = escapeXml(rawMessage);
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${totalWidth}" height="20" role="img" aria-label="${label}: ${message}">
   <title>${label}: ${message}</title>

@@ -7,12 +7,17 @@ interface MessageDetailProps {
   message: ProtocolMessage | null;
 }
 
+// Above this size, syntax highlighting is skipped — shiki tokenizes the whole
+// document synchronously and would freeze the tab on multi-MB payloads. The
+// plain <pre> fallback renders these instantly.
+const MAX_HIGHLIGHT_BYTES = 100_000;
+
 export function MessageDetail({ message }: MessageDetailProps) {
   const [highlighted, setHighlighted] = useState<string>("");
   const [copying, setCopying] = useState(false);
 
   useEffect(() => {
-    if (!message) {
+    if (!message || message.sizeBytes > MAX_HIGHLIGHT_BYTES) {
       setHighlighted("");
       return;
     }

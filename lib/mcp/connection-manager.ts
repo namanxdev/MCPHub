@@ -274,6 +274,18 @@ class ConnectionManager {
     return conn?.logger;
   }
 
+  /** Get a logger only if its connection belongs to the given user. */
+  getLoggerForUser(
+    sessionId: string,
+    userId: string
+  ): ProtocolLogger | undefined {
+    const conn = this.connections.get(sessionId);
+    if (!conn) return undefined;
+    if (conn.userId && conn.userId !== userId) return undefined;
+    conn.lastActivity = new Date();
+    return conn.logger;
+  }
+
   private startCleanupTimer() {
     this.cleanupTimer = setInterval(() => {
       const now = Date.now();
