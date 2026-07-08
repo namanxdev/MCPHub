@@ -63,6 +63,7 @@ export async function testCommand(
         timeout,
         headers,
         smokeTest: options.smokeTest,
+        smokeTestUnsafe: options.smokeTestUnsafe,
       },
     ];
   } else {
@@ -91,6 +92,28 @@ export async function testCommand(
     });
   }
 
+  // Warn before making real tool calls (skip in JSON mode to keep output clean).
+  const smokeEnabled =
+    options.smokeTest || targets.some((t) => t.smokeTest);
+  if (smokeEnabled && !options.json) {
+    console.error(
+      pc.yellow(
+        "⚠  --smoke-test makes REAL tool calls against the server. Tools may have side effects."
+      )
+    );
+    if (options.smokeTestUnsafe) {
+      console.error(
+        pc.red(
+          "⚠  --smoke-test-unsafe is set: tools annotated destructive will ALSO be invoked."
+        )
+      );
+    } else {
+      console.error(
+        pc.dim("   Tools annotated destructive are skipped by default.")
+      );
+    }
+  }
+
   // Watch mode
   if (options.watch) {
     const interval = parseInt(options.watchInterval || "10000", 10);
@@ -106,6 +129,7 @@ export async function testCommand(
       timeout: target.timeout || timeout,
       headers: target.headers || headers,
       smokeTest: target.smokeTest || options.smokeTest,
+      smokeTestUnsafe: target.smokeTestUnsafe || options.smokeTestUnsafe,
     };
     const result = await runChecks(mergedTarget, options);
     reporter.report(result);

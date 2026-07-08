@@ -9,6 +9,7 @@ import {
 } from "@/lib/db/schema";
 import { serverSubmissionSchema } from "@/lib/validators";
 import { generateSlug } from "@/lib/utils/index";
+import { validateOutboundUrl } from "@/lib/utils/validate-url";
 import { eq, and, or, ilike, desc, asc, sql } from "drizzle-orm";
 import { registrySubmitLimiter, getClientIp, checkRateLimit } from "@/lib/rate-limit";
 
@@ -112,6 +113,19 @@ export async function POST(request: NextRequest) {
   } = parsed.data;
 
   const isLocal = serverType === "local";
+
+  // SSRF protection: a hosted server URL will be connected to by this server
+  // (now, and repeatedly by the cron health sweep), so reject private/internal
+  // targets before storing anything. Localhost is disallowed for the registry.
+  if (!isLocal && url) {
+    const urlCheck = await validateOutboundUrl(url, { allowLocalhost: false });
+    if (!urlCheck.ok) {
+      return NextResponse.json(
+        { error: urlCheck.error },
+        { status: urlCheck.status }
+      );
+    }
+  }
 
   try {
     // Check for duplicate URL (only for hosted servers with a URL)

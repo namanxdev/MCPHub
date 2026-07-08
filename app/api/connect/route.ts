@@ -1,8 +1,7 @@
-import dns from "node:dns";
 import { NextRequest, NextResponse } from "next/server";
 import { connectionManager } from "@/lib/mcp/connection-manager";
 import { connectRequestSchema } from "@/lib/validators";
-import { isPrivateIp, isLocalhostUrl } from "@/lib/utils/index";
+import { validateOutboundUrl } from "@/lib/utils/validate-url";
 import { connectLimiter, getClientIp, checkRateLimit } from "@/lib/rate-limit";
 import { sanitizeErrorMessage } from "@/lib/utils/sanitize-error";
 import { auth } from "@/lib/auth";
@@ -50,46 +49,13 @@ export async function POST(req: NextRequest) {
     } else {
       const { url, transport, headers } = parsed.data;
 
-      // SSRF protection
-      try {
-        const parsedUrl = new URL(url);
-        if (
-          (parsedUrl.protocol !== "https:" && !isLocalhostUrl(url)) ||
-          (!isLocalhostUrl(url) && isPrivateIp(parsedUrl.hostname))
-        ) {
-          return NextResponse.json(
-            {
-              error:
-                "Connections to private/internal IP addresses are not allowed.",
-            },
-            { status: 403 }
-          );
-        }
-
-        // DNS rebinding protection: resolve the hostname and verify the
-        // resulting IP is also not private. Skip for localhost URLs which
-        // are intentionally allowed for local development.
-        if (!isLocalhostUrl(url)) {
-          const { address } = await dns.promises.lookup(parsedUrl.hostname);
-          if (isPrivateIp(address)) {
-            return NextResponse.json(
-              {
-                error:
-                  "Connections to private/internal IP addresses are not allowed.",
-              },
-              { status: 403 }
-            );
-          }
-        }
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        if (msg.includes("ENOTFOUND") || msg.includes("EAI_")) {
-          return NextResponse.json(
-            { error: "Could not resolve hostname." },
-            { status: 400 }
-          );
-        }
-        return NextResponse.json({ error: "Invalid URL" }, { status: 400 });
+      // SSRF protection (localhost allowed for local development)
+      const urlCheck = await validateOutboundUrl(url, { allowLocalhost: true });
+      if (!urlCheck.ok) {
+        return NextResponse.json(
+          { error: urlCheck.error },
+          { status: urlCheck.status }
+        );
       }
 
       const result = await Promise.race([

@@ -1,13 +1,23 @@
 /**
  * Check 8: Tool Smoke Test
  * Invokes each tool with empty/default args to verify the server doesn't crash.
+ *
+ * WARNING: this makes REAL tool calls against the target server. Tools can have
+ * side effects (send email, write/delete data). By default, tools annotated
+ * with `destructiveHint: true` are skipped; pass `unsafe` to include them.
  */
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import type { CheckResult } from "../types.js";
 
+interface ToolAnnotations {
+  readOnlyHint?: boolean;
+  destructiveHint?: boolean;
+}
+
 interface ToolInfo {
   name: string;
   inputSchema?: unknown;
+  annotations?: ToolAnnotations;
 }
 
 interface ToolTestResult {
@@ -15,6 +25,7 @@ interface ToolTestResult {
   passed: boolean;
   durationMs: number;
   error?: string;
+  skipped?: boolean;
 }
 
 function buildDefaultArgs(inputSchema?: unknown): Record<string, unknown> {
@@ -60,13 +71,26 @@ function buildDefaultArgs(inputSchema?: unknown): Record<string, unknown> {
 export async function checkSmokeTest(
   client: Client,
   tools: ToolInfo[],
-  timeout: number
+  timeout: number,
+  includeDestructive = false
 ): Promise<CheckResult> {
   const start = Date.now();
   const perToolTimeout = Math.min(timeout, 15000);
   const results: ToolTestResult[] = [];
 
   for (const tool of tools) {
+    // Skip tools the server declares destructive unless explicitly opted in —
+    // invoking these for real could delete/modify data or trigger side effects.
+    if (tool.annotations?.destructiveHint === true && !includeDestructive) {
+      results.push({
+        name: tool.name,
+        passed: true,
+        durationMs: 0,
+        skipped: true,
+      });
+      continue;
+    }
+
     const toolStart = Date.now();
     try {
       const args = buildDefaultArgs(tool.inputSchema);
@@ -108,15 +132,26 @@ export async function checkSmokeTest(
     }
   }
 
-  const passedTools = results.filter((r) => r.passed);
-  const failedTools = results.filter((r) => !r.passed);
+  const skippedTools = results.filter((r) => r.skipped);
+  const invokedTools = results.filter((r) => !r.skipped);
+  const passedTools = invokedTools.filter((r) => r.passed);
+  const failedTools = invokedTools.filter((r) => !r.passed);
   const allPassed = failedTools.length === 0;
 
+  const skipNote =
+    skippedTools.length > 0
+      ? ` (${skippedTools.length} destructive tool${
+          skippedTools.length !== 1 ? "s" : ""
+        } skipped — pass --smoke-test-unsafe to include)`
+      : "";
+
   const message = allPassed
-    ? `All ${results.length} tool${results.length !== 1 ? "s" : ""} responded without crashing`
+    ? `${invokedTools.length} tool${
+        invokedTools.length !== 1 ? "s" : ""
+      } responded without crashing${skipNote}`
     : failedTools
         .map((t) => `  - ${t.name}: ${t.error}`)
-        .join("\n");
+        .join("\n") + skipNote;
 
   return {
     name: "Tool Smoke Test",
@@ -125,11 +160,13 @@ export async function checkSmokeTest(
     message,
     error: allPassed
       ? undefined
-      : `${failedTools.length}/${results.length} tool${failedTools.length !== 1 ? "s" : ""} failed smoke test`,
+      : `${failedTools.length}/${invokedTools.length} tool${failedTools.length !== 1 ? "s" : ""} failed smoke test`,
     details: {
       total: results.length,
+      invoked: invokedTools.length,
       passed: passedTools.length,
       failed: failedTools.length,
+      skipped: skippedTools.length,
       results,
     },
   };

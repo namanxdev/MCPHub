@@ -14,6 +14,9 @@ export function isPrivateIp(hostname: string): boolean {
     /^172\.(1[6-9]|2[0-9]|3[0-1])\./,
     /^192\.168\./,
     /^127\./,
+    // IPv4 link-local (169.254.0.0/16) — includes the cloud metadata endpoint
+    // 169.254.169.254, a common SSRF target.
+    /^169\.254\./,
     /^0\.0\.0\.0$/,
     // IPv6 loopback
     /^::1$/,
@@ -24,7 +27,7 @@ export function isPrivateIp(hostname: string): boolean {
     // IPv6 link-local (fe80::/10)
     /^fe80:/,
     // IPv4-mapped IPv6: ::ffff:<ipv4>
-    /^::ffff:(10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|192\.168\.|127\.)/,
+    /^::ffff:(10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|192\.168\.|127\.|169\.254\.)/,
     // Hostname-based
     /^localhost$/,
     /\.local$/,

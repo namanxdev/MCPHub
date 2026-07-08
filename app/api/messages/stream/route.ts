@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { connectionManager } from "@/lib/mcp/connection-manager";
 import { streamLimiter, getClientIp, checkRateLimit } from "@/lib/rate-limit";
+import { auth } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
   const rateLimitResponse = checkRateLimit(streamLimiter, getClientIp(request));
@@ -12,7 +13,14 @@ export async function GET(request: NextRequest) {
     return new Response("sessionId query param required", { status: 400 });
   }
 
-  const logger = connectionManager.getLogger(sessionId);
+  // The message log can contain raw tool-call arguments (potentially secrets),
+  // so only the owning user may stream it — same ownership model as the tool
+  // call and disconnect routes. Anonymous sessions (no userId) stay open.
+  const session = await auth();
+  const userId = session?.user?.id;
+  const logger = userId
+    ? connectionManager.getLoggerForUser(sessionId, userId)
+    : connectionManager.getLogger(sessionId);
   if (!logger) {
     return new Response("Session not found", { status: 404 });
   }

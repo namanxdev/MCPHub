@@ -24,7 +24,14 @@ program
   .option("--timeout <ms>", "Global timeout in milliseconds", "30000")
   .option("--json", "Output results as JSON")
   .option("-v, --verbose", "Include raw JSON-RPC messages")
-  .option("--smoke-test", "Invoke each tool with empty args")
+  .option(
+    "--smoke-test",
+    "Invoke each tool with empty args (makes REAL calls; destructive-annotated tools are skipped)"
+  )
+  .option(
+    "--smoke-test-unsafe",
+    "With --smoke-test, also invoke tools annotated destructive (may cause side effects)"
+  )
   .option("-H, --header <header...>", "Custom headers (key: value)")
   .option("--junit <path>", "Output JUnit XML to file")
   .option("--no-color", "Disable colors")

@@ -38,6 +38,8 @@ export interface ServerTarget {
   timeout: number;
   headers?: Record<string, string>;
   smokeTest?: boolean;
+  /** Also invoke tools annotated destructiveHint during smoke test. */
+  smokeTestUnsafe?: boolean;
 }
 
 export interface TestOptions {
@@ -46,6 +48,7 @@ export interface TestOptions {
   json?: boolean;
   verbose?: boolean;
   smokeTest?: boolean;
+  smokeTestUnsafe?: boolean;
   header?: string[];
   junit?: string;
   color?: boolean;
