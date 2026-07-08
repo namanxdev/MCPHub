@@ -20,9 +20,13 @@ export function useProtocolMessages(sessionId: string | undefined) {
       `/api/messages/stream?sessionId=${encodeURIComponent(sessionId)}`
     );
 
+    const seen = new Set<string>();
+
     eventSource.onopen = () => setConnected(true);
     eventSource.onmessage = (event) => {
       const msg = JSON.parse(event.data) as ProtocolMessage;
+      if (seen.has(msg.id)) return;
+      seen.add(msg.id);
       setMessages((prev) => [...prev, msg]);
     };
     eventSource.onerror = () => setConnected(false);

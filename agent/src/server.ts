@@ -9,13 +9,13 @@ export interface ServerOptions {
 export function startServer(options: ServerOptions): void {
   const { port } = options;
   const wss = new WebSocketServer({ port });
-  const bridge = new MCPBridge();
 
   console.log(`🚀 MCPHub Agent listening on ws://localhost:${port}`);
   console.log('Waiting for connections from MCPHub web app...\n');
 
   wss.on('connection', (ws: WebSocket) => {
     console.log('✅ MCPHub web app connected');
+    const bridge = new MCPBridge();
 
     ws.on('message', async (data) => {
       try {

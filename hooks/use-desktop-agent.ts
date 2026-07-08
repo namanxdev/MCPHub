@@ -68,6 +68,11 @@ const pendingRequests = new Map<string, PendingRequest>();
 let connectionAttempts = 0;
 const MAX_CONNECTION_ATTEMPTS = 3;
 
+const availabilityListeners = new Set<(v: boolean) => void>();
+function notifyAvailability(v: boolean) {
+  availabilityListeners.forEach((fn) => fn(v));
+}
+
 function connectWebSocket(): Promise<void> {
   return new Promise((resolve, reject) => {
     if (ws?.readyState === WebSocket.OPEN) {
@@ -84,6 +89,7 @@ function connectWebSocket(): Promise<void> {
 
       ws.onopen = () => {
         connectionAttempts = 0;
+        notifyAvailability(true);
         resolve();
       };
 
@@ -106,6 +112,7 @@ function connectWebSocket(): Promise<void> {
 
       ws.onclose = () => {
         ws = null;
+        notifyAvailability(false);
         // Reject all pending requests
         for (const [id, pending] of pendingRequests) {
           pending.reject(new Error("Agent WebSocket closed"));
@@ -116,6 +123,7 @@ function connectWebSocket(): Promise<void> {
 
       ws.onerror = (error) => {
         console.error("Agent WebSocket error:", error);
+        notifyAvailability(false);
         reject(new Error("Agent WebSocket error"));
       };
     } catch (error) {
@@ -189,9 +197,14 @@ export function useDesktopAgent() {
     let pollInterval: NodeJS.Timeout;
     let mounted = true;
 
+    const listener = (v: boolean) => {
+      if (mounted) setIsAvailable(v);
+    };
+    availabilityListeners.add(listener);
+
     const setupPolling = () => {
       checkAgentAvailability();
-      
+
       if (mounted) {
         pollInterval = setInterval(() => {
           if (!ws || ws.readyState !== WebSocket.OPEN) {
@@ -205,6 +218,7 @@ export function useDesktopAgent() {
 
     return () => {
       mounted = false;
+      availabilityListeners.delete(listener);
       if (pollInterval) {
         clearInterval(pollInterval);
       }
