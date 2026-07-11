@@ -41,6 +41,24 @@ export function mapRegistryEntry(raw: RawEntry): RegistryEntry | null {
 
 const OFFICIAL_REGISTRY = "https://registry.modelcontextprotocol.io/v0/servers";
 
+/** Fetch one registry page with a generous timeout + retries (the API can be slow). */
+async function fetchRegistryPage(url: string, attempts = 3): Promise<Response | null> {
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const res = await fetch(url, {
+        headers: { Accept: "application/json" },
+        signal: AbortSignal.timeout(60000),
+      });
+      // Retry transient 5xx; give up on 4xx (won't improve on retry).
+      if (res.ok || res.status < 500) return res;
+    } catch {
+      // timeout / network error → fall through to retry
+    }
+    if (i < attempts - 1) await new Promise((r) => setTimeout(r, 1500 * (i + 1)));
+  }
+  return null;
+}
+
 /** Fetch + paginate the official registry, upsert streamable-http servers into Postgres. */
 export async function seedRegistryFromOfficial(opts: { limit?: number; maxPages?: number } = {}): Promise<{
   imported: number; skipped: number; scanned: number;
@@ -55,11 +73,8 @@ export async function seedRegistryFromOfficial(opts: { limit?: number; maxPages?
   for (let page = 0; page < maxPages; page++) {
     const qs = new URLSearchParams({ limit: String(limit) });
     if (cursor) qs.set("cursor", cursor);
-    const res = await fetch(`${OFFICIAL_REGISTRY}?${qs.toString()}`, {
-      headers: { Accept: "application/json" },
-      signal: AbortSignal.timeout(20000),
-    });
-    if (!res.ok) break;
+    const res = await fetchRegistryPage(`${OFFICIAL_REGISTRY}?${qs.toString()}`);
+    if (!res || !res.ok) break; // slow/unreachable page: stop, keep prior progress
     const body = (await res.json()) as { servers?: unknown; metadata?: { nextCursor?: string } };
     const rawList: RawEntry[] = Array.isArray(body?.servers) ? (body.servers as RawEntry[]) : [];
     if (rawList.length === 0) break;
