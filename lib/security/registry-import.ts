@@ -6,8 +6,8 @@ import { generateSlug } from "../utils/index.js";
 import { validateOutboundUrl } from "../utils/validate-url.js";
 import type { RegistryEntry } from "./types.js";
 
-interface RawRemote { type?: string; url?: string }
-interface RawEntry { name?: string; description?: string; version?: string; remotes?: RawRemote[] }
+export interface RawRemote { type?: string; url?: string }
+export interface RawEntry { name?: string; description?: string; version?: string; remotes?: RawRemote[] }
 
 /** Pure: map one official-registry entry to a normalized RegistryEntry, or null if no streamable-http remote. */
 export function mapRegistryEntry(entry: RawEntry): RegistryEntry | null {
@@ -40,8 +40,8 @@ export async function seedRegistryFromOfficial(opts: { limit?: number; maxPages?
       signal: AbortSignal.timeout(20000),
     });
     if (!res.ok) break;
-    const body: unknown = await res.json();
-    const rawList: RawEntry[] = Array.isArray((body as any)?.servers) ? (body as any).servers : [];
+    const body = (await res.json()) as { servers?: unknown };
+    const rawList: RawEntry[] = Array.isArray(body?.servers) ? (body.servers as RawEntry[]) : [];
     if (rawList.length === 0) break;
     scanned += rawList.length;
 

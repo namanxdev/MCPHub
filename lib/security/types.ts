@@ -42,3 +42,9 @@ export interface RegistryEntry {
   version: string;
   url: string;
 }
+
+/** Parsed OAuth `.well-known` metadata documents (shape is server-defined). */
+export interface WellKnownDocs {
+  prm: Record<string, unknown> | null;
+  asm: Record<string, unknown> | null;
+}

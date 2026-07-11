@@ -1,15 +1,21 @@
 // lib/security/client.ts
-import type { Exposure, ProbedTool } from "./types.js";
+import type { Exposure, ProbedTool, WellKnownDocs } from "./types.js";
 import { validateOutboundUrl } from "../utils/validate-url.js";
 
 const CLIENT_INFO = { name: "mcphub-security-scan", version: "1.0.0" };
 const RPC_TIMEOUT_MS = 15000;
 
+/** Minimal shape of a JSON-RPC response we read from (fields are optional/unknown). */
+interface RpcResponse {
+  error?: unknown;
+  result?: { tools?: unknown };
+}
+
 async function rpc(
   url: string,
   body: unknown,
   sessionId?: string
-): Promise<{ json: any | null; sessionId?: string; ok: boolean }> {
+): Promise<{ json: RpcResponse | null; sessionId?: string; ok: boolean }> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     Accept: "application/json, text/event-stream",
@@ -26,7 +32,7 @@ async function rpc(
   const raw = await res.text();
   const contentType = res.headers.get("content-type") ?? "";
 
-  let json: any = null;
+  let json: RpcResponse | null = null;
   try {
     if (contentType.includes("text/event-stream")) {
       for (const line of raw.split(/\r?\n/)) {
@@ -100,20 +106,20 @@ export async function probeNoAuth(url: string): Promise<ProbeResult> {
     const listOk = list.ok && Array.isArray(list.json?.result?.tools);
     const { exposure, note } = classifyExposure({ initOk: true, initError: false, listOk, toolCount: tools.length });
     return { reachable: true, exposure, tools, note };
-  } catch (e: any) {
-    return { reachable: false, exposure: "unreachable", tools: [], note: `unreachable: ${e?.message ?? e}` };
+  } catch (e) {
+    return { reachable: false, exposure: "unreachable", tools: [], note: `unreachable: ${e instanceof Error ? e.message : String(e)}` };
   }
 }
 
-export async function fetchWellKnown(baseUrl: string): Promise<{ prm: any | null; asm: any | null }> {
+export async function fetchWellKnown(baseUrl: string): Promise<WellKnownDocs> {
   const origin = new URL(baseUrl).origin;
-  const grab = async (path: string) => {
+  const grab = async (path: string): Promise<Record<string, unknown> | null> => {
     try {
       const r = await fetch(origin + path, {
         headers: { Accept: "application/json" },
         signal: AbortSignal.timeout(RPC_TIMEOUT_MS),
       });
-      return r.ok ? await r.json() : null;
+      return r.ok ? ((await r.json()) as Record<string, unknown>) : null;
     } catch {
       return null;
     }

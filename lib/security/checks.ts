@@ -1,5 +1,5 @@
 // lib/security/checks.ts
-import type { Finding, ProbedTool, Severity, Status } from "./types.js";
+import type { Finding, ProbedTool, Severity, Status, WellKnownDocs } from "./types.js";
 import { scanDescription } from "./poison.js";
 import type { ProbeResult } from "./client.js";
 
@@ -20,7 +20,7 @@ const ADVISORY: Finding[] = (
 export interface BuildFindingsInput {
   isHttps: boolean;
   probe: ProbeResult;
-  wellKnown: { prm: any | null; asm: any | null };
+  wellKnown: WellKnownDocs;
   driftFindings: Finding[];
 }
 
