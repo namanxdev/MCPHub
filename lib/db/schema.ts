@@ -206,3 +206,38 @@ export const serverHealthChecks = pgTable(
     ),
   })
 );
+
+// ─── Security Scan ─────────────────────────────────────────────────────────────
+
+export const serverScans = pgTable(
+  "server_scans",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    serverId: uuid("server_id").references(() => servers.id, { onDelete: "cascade" }),
+    target: text("target").notNull(),
+    score: integer("score").notNull(),
+    grade: text("grade").notNull(),
+    toolsCount: integer("tools_count").notNull().default(0),
+    findings: jsonb("findings").notNull(),
+    scannedAt: timestamp("scanned_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    serverIdx: index("idx_scans_server").on(table.serverId, table.scannedAt),
+    targetIdx: index("idx_scans_target").on(table.target),
+  })
+);
+
+export const toolBaselines = pgTable(
+  "tool_baselines",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    target: text("target").notNull(),
+    toolName: text("tool_name").notNull(),
+    hash: text("hash").notNull(),
+    capturedAt: timestamp("captured_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    targetToolIdx: index("idx_baselines_target_tool").on(table.target, table.toolName),
+  })
+);
