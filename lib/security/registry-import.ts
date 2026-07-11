@@ -7,14 +7,29 @@ import { validateOutboundUrl } from "../utils/validate-url.js";
 import type { RegistryEntry } from "./types.js";
 
 export interface RawRemote { type?: string; url?: string }
-export interface RawEntry { name?: string; description?: string; version?: string; remotes?: RawRemote[] }
+export interface RawServer {
+  name?: string;
+  title?: string;
+  description?: string;
+  version?: string;
+  remotes?: RawRemote[];
+}
+/**
+ * A registry list item. The official MCP registry wraps the server object under
+ * `server` (`{ server: {...}, _meta: {...} }`); we also accept a flat shape.
+ */
+export interface RawEntry extends RawServer {
+  server?: RawServer;
+}
 
 /** Pure: map one official-registry entry to a normalized RegistryEntry, or null if no streamable-http remote. */
-export function mapRegistryEntry(entry: RawEntry): RegistryEntry | null {
+export function mapRegistryEntry(raw: RawEntry): RegistryEntry | null {
+  const entry: RawServer = raw.server ?? raw;
   const remote = (entry.remotes ?? []).find((r) => r.type === "streamable-http" && !!r.url);
   if (!remote?.url) return null;
   const name = entry.name ?? remote.url;
-  const title = name.includes("/") ? name.slice(name.lastIndexOf("/") + 1) : name;
+  const title =
+    entry.title ?? (name.includes("/") ? name.slice(name.lastIndexOf("/") + 1) : name);
   return {
     name,
     title,
@@ -33,14 +48,19 @@ export async function seedRegistryFromOfficial(opts: { limit?: number; maxPages?
   const limit = opts.limit ?? 100;
   const maxPages = opts.maxPages ?? 5;
   let imported = 0, skipped = 0, scanned = 0;
+  // The official registry paginates by opaque cursor (metadata.nextCursor), NOT
+  // by offset — an offset param is ignored and returns the same first page.
+  let cursor: string | undefined;
 
   for (let page = 0; page < maxPages; page++) {
-    const res = await fetch(`${OFFICIAL_REGISTRY}?limit=${limit}&offset=${page * limit}`, {
+    const qs = new URLSearchParams({ limit: String(limit) });
+    if (cursor) qs.set("cursor", cursor);
+    const res = await fetch(`${OFFICIAL_REGISTRY}?${qs.toString()}`, {
       headers: { Accept: "application/json" },
       signal: AbortSignal.timeout(20000),
     });
     if (!res.ok) break;
-    const body = (await res.json()) as { servers?: unknown };
+    const body = (await res.json()) as { servers?: unknown; metadata?: { nextCursor?: string } };
     const rawList: RawEntry[] = Array.isArray(body?.servers) ? (body.servers as RawEntry[]) : [];
     if (rawList.length === 0) break;
     scanned += rawList.length;
@@ -72,7 +92,8 @@ export async function seedRegistryFromOfficial(opts: { limit?: number; maxPages?
       });
       imported++;
     }
-    if (rawList.length < limit) break;
+    cursor = body.metadata?.nextCursor;
+    if (!cursor || rawList.length < limit) break;
   }
   return { imported, skipped, scanned };
 }

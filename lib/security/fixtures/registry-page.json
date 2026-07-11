@@ -1,23 +1,41 @@
 {
   "servers": [
     {
-      "name": "io.github.acme/docs",
-      "description": "Docs search server",
-      "version": "1.2.0",
-      "remotes": [{ "type": "streamable-http", "url": "https://docs.acme.example/mcp" }]
+      "server": {
+        "name": "io.github.acme/docs",
+        "title": "Acme Docs",
+        "description": "Docs search server",
+        "version": "1.2.0",
+        "remotes": [{ "type": "streamable-http", "url": "https://docs.acme.example/mcp" }]
+      },
+      "_meta": {
+        "io.modelcontextprotocol.registry/official": { "status": "active", "isLatest": true }
+      }
     },
     {
-      "name": "io.github.acme/legacy-sse",
-      "description": "Legacy SSE only",
-      "version": "0.1.0",
-      "remotes": [{ "type": "sse", "url": "https://legacy.acme.example/sse" }]
+      "server": {
+        "name": "io.github.acme/legacy-sse",
+        "description": "Legacy SSE only",
+        "version": "0.1.0",
+        "remotes": [{ "type": "sse", "url": "https://legacy.acme.example/sse" }]
+      }
     },
     {
-      "name": "io.github.acme/no-remotes",
-      "description": "Package-only server",
-      "version": "2.0.0",
-      "packages": [{ "registry_name": "npm", "name": "acme-mcp" }]
+      "server": {
+        "name": "io.github.acme/no-remotes",
+        "description": "Package-only server",
+        "version": "2.0.0",
+        "packages": [{ "registry_name": "npm", "name": "acme-mcp" }]
+      }
+    },
+    {
+      "server": {
+        "name": "io.github.acme/no-title",
+        "description": "Has a streamable-http remote but no title",
+        "version": "3.0.0",
+        "remotes": [{ "type": "streamable-http", "url": "https://notitle.acme.example/mcp" }]
+      }
     }
   ],
-  "metadata": { "count": 3 }
+  "metadata": { "count": 4 }
 }
