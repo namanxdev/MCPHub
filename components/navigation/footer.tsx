@@ -1,10 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { Github, Twitter, MessageCircle, ArrowUpRight } from "lucide-react";
 import { useLenis } from "@/components/ui/smooth-scroll";
-import { StaggerGroup } from "@/components/effects/stagger-group";
 
 const links = {
   Product: [
@@ -15,8 +13,8 @@ const links = {
   ],
   Resources: [
     { href: "/docs", label: "Documentation" },
-    { href: "/api", label: "API Reference" },
-    { href: "/cli", label: "CLI" },
+    { href: "/docs#cli", label: "CLI" },
+    { href: "/docs#desktop-agent", label: "Desktop Agent" },
   ],
 };
 

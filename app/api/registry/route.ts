@@ -10,7 +10,7 @@ import {
 import { serverSubmissionSchema } from "@/lib/validators";
 import { generateSlug } from "@/lib/utils/index";
 import { validateOutboundUrl } from "@/lib/utils/validate-url";
-import { eq, and, or, ilike, desc, asc, sql } from "drizzle-orm";
+import { eq, and, or, ilike, desc, asc, sql, notInArray } from "drizzle-orm";
 import { registrySubmitLimiter, getClientIp, checkRateLimit } from "@/lib/rate-limit";
 
 // ─── GET /api/registry ────────────────────────────────────────────────────────
@@ -18,7 +18,11 @@ export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const q = searchParams.get("q") || "";
   const category = searchParams.get("category") || "";
-  const status = searchParams.get("status") || "active";
+  // Health status (degraded/unreachable) is separate from listing status. A server
+  // whose health check fails should show an offline badge, not disappear from the
+  // registry — so by default we list everything except moderation-hidden rows
+  // (pending / removed). An explicit ?status= filter still narrows to one value.
+  const status = searchParams.get("status");
   const sort = searchParams.get("sort") || "newest";
   const featured = searchParams.get("featured");
   const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
@@ -28,7 +32,9 @@ export async function GET(request: NextRequest) {
   try {
     const escapedQ = q.replace(/%/g, '\\%').replace(/_/g, '\\_');
     const whereClause = and(
-      eq(servers.status, status),
+      status
+        ? eq(servers.status, status)
+        : notInArray(servers.status, ["pending", "removed"]),
       q
         ? or(
             ilike(servers.name, `%${escapedQ}%`),
