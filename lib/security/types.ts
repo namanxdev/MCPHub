@@ -1,6 +1,6 @@
 // lib/security/types.ts
 export type Severity = "critical" | "high" | "medium" | "low" | "info";
-export type Status = "pass" | "fail" | "advisory" | "error";
+export type Status = "pass" | "fail" | "advisory" | "error" | "info";
 export type Exposure = "exposed" | "inconclusive" | "enforced" | "unreachable";
 
 export interface Finding {
