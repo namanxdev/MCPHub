@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import type { ProtocolMessage } from "@/lib/mcp/protocol-logger";
 
+const MAX_MESSAGES = 2000;
+
 export type { ProtocolMessage };
 
 interface InspectorStore {
@@ -32,7 +34,7 @@ export const useInspectorStore = create<InspectorStore>((set) => ({
   autoScroll: true,
 
   addMessage: (msg) =>
-    set((state) => ({ messages: [...state.messages, msg] })),
+    set((state) => ({ messages: [...state.messages, msg].slice(-MAX_MESSAGES) })),
   selectMessage: (id) => set({ selectedMessageId: id }),
   setDirectionFilter: (f) => set({ directionFilter: f }),
   setStatusFilter: (f) => set({ statusFilter: f }),

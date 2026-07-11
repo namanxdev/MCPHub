@@ -7,6 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "vitest run",
+    "scan": "tsx scripts/security/cli.ts",
+    "registry:seed": "tsx scripts/security/cli.ts registry seed",
     "db:setup": "tsx scripts/setup-db.ts",
     "db:seed": "tsx scripts/seed-registry.ts",
     "db:push": "drizzle-kit push"
