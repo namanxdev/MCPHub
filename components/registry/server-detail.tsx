@@ -85,6 +85,20 @@ interface ServerData {
   updatedAt: string | Date;
 }
 
+interface ScanFinding {
+  id: string;
+  status: string;
+  detail?: string;
+}
+
+interface LatestScan {
+  grade: string;
+  score: number;
+  toolsCount: number;
+  findings: unknown;
+  scannedAt: string | Date;
+}
+
 interface ServerDetailProps {
   server: ServerData;
   capabilities: {
@@ -93,6 +107,7 @@ interface ServerDetailProps {
     prompts: ServerPrompt[];
   };
   healthChecks: HealthCheck[];
+  latestScan?: LatestScan | null;
 }
 
 function statusToHealth(status: string): HealthStatus {
@@ -170,10 +185,32 @@ function HealthHistoryChart({ checks }: { checks: HealthCheck[] }) {
   );
 }
 
+const GRADE_STYLES: Record<string, string> = {
+  A: "text-green-600 dark:text-green-400",
+  B: "text-emerald-600 dark:text-emerald-400",
+  C: "text-amber-600 dark:text-amber-400",
+  D: "text-orange-600 dark:text-orange-400",
+  F: "text-red-600 dark:text-red-400",
+};
+
+function parseAuthNote(findings: unknown): string {
+  if (!Array.isArray(findings)) return "";
+  const auth = (findings as ScanFinding[]).find(f => f.id === "MCP-AUTH-UNAUTH");
+  if (!auth) return "";
+  if (auth.status === "pass") return "auth enforced";
+  if (auth.status === "fail") {
+    const m = auth.detail?.match(/(\d+) tool/);
+    return m ? `${m[1]} tools exposed, no auth` : "tools exposed, no auth";
+  }
+  if (auth.status === "error") return "endpoint unreachable";
+  return "";
+}
+
 export function ServerDetail({
   server,
   capabilities,
   healthChecks,
+  latestScan,
 }: ServerDetailProps) {
   const [copied, setCopied] = useState(false);
   const isLocal = server.serverType === "local";
@@ -325,7 +362,7 @@ export function ServerDetail({
       )}
 
       {/* Health overview (hidden for local servers) */}
-      {!isLocal && <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {!isLocal && <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <Card className="py-4 gap-2">
           <CardContent className="px-4">
             <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
@@ -360,6 +397,28 @@ export function ServerDetail({
               Checks
             </p>
             <p className="text-sm font-semibold">{healthChecks.length}</p>
+          </CardContent>
+        </Card>
+        <Card className="py-4 gap-2 col-span-2 md:col-span-1">
+          <CardContent className="px-4">
+            <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
+              Security
+            </p>
+            {latestScan ? (
+              <div>
+                <span className={`text-sm font-bold ${GRADE_STYLES[latestScan.grade] ?? ""}`}>
+                  {latestScan.grade}
+                </span>
+                <span className="text-xs text-muted-foreground ml-1">
+                  {latestScan.score}/100
+                </span>
+                <p className="text-xs text-muted-foreground mt-0.5 leading-tight">
+                  {parseAuthNote(latestScan.findings)}
+                </p>
+              </div>
+            ) : (
+              <p className="text-sm font-semibold text-muted-foreground">—</p>
+            )}
           </CardContent>
         </Card>
       </div>}

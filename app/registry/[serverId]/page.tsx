@@ -9,6 +9,7 @@ import {
   serverResources,
   serverPrompts,
   serverHealthChecks,
+  serverScans,
 } from "@/lib/db/schema";
 import { eq, or, desc } from "drizzle-orm";
 
@@ -38,7 +39,7 @@ async function getServerDetail(serverId: string) {
 
     const server = serverResults[0];
 
-    const [tools, resources, prompts, healthChecks] = await Promise.all([
+    const [tools, resources, prompts, healthChecks, scanRows] = await Promise.all([
       db
         .select()
         .from(serverTools)
@@ -57,12 +58,25 @@ async function getServerDetail(serverId: string) {
         .where(eq(serverHealthChecks.serverId, server.id))
         .orderBy(desc(serverHealthChecks.checkedAt))
         .limit(10),
+      db
+        .select({
+          grade: serverScans.grade,
+          score: serverScans.score,
+          toolsCount: serverScans.toolsCount,
+          findings: serverScans.findings,
+          scannedAt: serverScans.scannedAt,
+        })
+        .from(serverScans)
+        .where(eq(serverScans.serverId, server.id))
+        .orderBy(desc(serverScans.scannedAt))
+        .limit(1),
     ]);
 
     return {
       server,
       capabilities: { tools, resources, prompts },
       healthChecks,
+      latestScan: scanRows[0] ?? null,
     };
   } catch (error) {
     console.error("Failed to fetch server detail:", error);
@@ -91,6 +105,7 @@ export default async function RegistryServerPage({
         server={data.server}
         capabilities={data.capabilities}
         healthChecks={data.healthChecks}
+        latestScan={data.latestScan}
       />
     </div>
   );
