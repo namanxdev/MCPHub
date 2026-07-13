@@ -44,4 +44,8 @@ describe("scanDescription — false-positive guards (must NOT fire)", () => {
     const schema = JSON.stringify({ type: "object", properties: { query: { type: "string" } } });
     expect(scanDescription(`Search docs ${schema}`)).toEqual([]);
   });
+  it("legitimate privacy notice mentioning 'credentials' does not fire", () => {
+    const notice = "Do not include any sensitive or confidential information such as API keys, passwords, credentials, personal data, or proprietary code in your query.";
+    expect(scanDescription(notice)).toEqual([]);
+  });
 });

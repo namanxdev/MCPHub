@@ -4,7 +4,7 @@ const POISON_PATTERNS: { rx: RegExp; label: string }[] = [
   { rx: /do not (tell|mention|reveal|inform)[^.]*user/i, label: "instructs model to hide action from user" },
   { rx: /before using this tool[,\s]/i, label: "prerequisite-action injection" },
   { rx: /ignore (all |any )?(previous|prior|above)/i, label: "instruction-override attempt" },
-  { rx: /\.(env|ssh|aws|cursor\/mcp\.json)|id_rsa|authorized_keys|credentials/i, label: "references sensitive file/creds" },
+  { rx: /\.(env|ssh|aws|cursor\/mcp\.json|credentials)|id_rsa|authorized_keys/i, label: "references sensitive file/creds" },
   { rx: /(pass|send|post|forward)[^.]*(content|contents|to https?:\/\/)/i, label: "possible exfiltration directive" },
   // Astral-plane escapes REQUIRE the /u flag + \u{...} syntax, else the range
   // corrupts and matches ordinary ASCII capitals (the fixed bug).
