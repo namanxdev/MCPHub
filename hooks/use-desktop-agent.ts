@@ -65,8 +65,6 @@ type PendingRequest = {
 // Module-level singleton for WebSocket connection
 let ws: WebSocket | null = null;
 const pendingRequests = new Map<string, PendingRequest>();
-let connectionAttempts = 0;
-const MAX_CONNECTION_ATTEMPTS = 3;
 
 const availabilityListeners = new Set<(v: boolean) => void>();
 function notifyAvailability(v: boolean) {
@@ -88,7 +86,6 @@ function connectWebSocket(): Promise<void> {
       ws = new WebSocket(AGENT_WS_URL);
 
       ws.onopen = () => {
-        connectionAttempts = 0;
         notifyAvailability(true);
         resolve();
       };
@@ -121,8 +118,13 @@ function connectWebSocket(): Promise<void> {
         reject(new Error("Agent WebSocket closed"));
       };
 
-      ws.onerror = (error) => {
-        console.error("Agent WebSocket error:", error);
+      ws.onerror = () => {
+        // A WebSocket "error" here almost always means the Desktop Agent simply
+        // isn't running on localhost:54319 — an expected, benign condition (most
+        // users never install it). The browser's error Event carries no useful
+        // detail (it serializes to "{}"), so logging it as an error is pure noise
+        // that fires on every availability poll. Availability is already surfaced
+        // via notifyAvailability + the rejected promise, which callers handle.
         notifyAvailability(false);
         reject(new Error("Agent WebSocket error"));
       };
