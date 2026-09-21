@@ -54,7 +54,7 @@ function getAllowedOrigins(): string[] {
   return [];
 }
 
-export default auth(function middleware(request) {
+export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const origin = request.headers.get("origin") ?? "";
   const allowedOrigins = getAllowedOrigins();
@@ -78,7 +78,8 @@ export default auth(function middleware(request) {
 
   // Protected route check
   if (isProtectedRoute(pathname, request.method)) {
-    if (!request.auth?.user) {
+    const session = await auth();
+    if (!session?.user) {
       const response = NextResponse.json(
         { error: "Authentication required" },
         { status: 401 }
@@ -90,7 +91,7 @@ export default auth(function middleware(request) {
   // Default: pass through with CORS
   const response = NextResponse.next();
   return addCorsHeaders(response, origin, allowedOrigins);
-});
+}
 
 export const config = {
   matcher: "/api/:path*",

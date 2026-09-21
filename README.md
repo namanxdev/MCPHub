@@ -233,6 +233,15 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
+`npm run dev` automatically uses a shared **Local Developer** session. No sign-in,
+OAuth credentials, or auth database records are needed for local authentication.
+Registry and metrics features still require `DATABASE_URL`. The bypass is enabled
+only when `NODE_ENV=development`; production builds use normal authentication.
+
+If Google sign-in reports `invalid_client` / "The provided client secret is
+invalid", replace `AUTH_GOOGLE_SECRET` with the secret belonging to the OAuth
+client identified by `AUTH_GOOGLE_ID`, then restart or redeploy the app.
+
 ---
 
 ## OAuth Setup
